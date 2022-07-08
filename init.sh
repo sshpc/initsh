@@ -1,5 +1,5 @@
 #!/bin/bash
-
+ 
 aptupdatefun(){
 
 echo "------>>开始更新源列表"
@@ -73,6 +73,37 @@ netplan apply
 sleep 1
 echo "配置已应用"
 }
+ufwapt(){
+apt install ufw -y
+echo "ufw 已安装"
+echo "请输入y以开启ufw"
+ufw enable 
+echo "ufw已开启"
+sudo ufw allow 22
+echo "已配置允许 22 端口"
+sudo ufw default deny
+echo "已配置关闭所有外部对本机的访问"
+
+
+}
+ufwdel(){
+sudo ufw disable 
+echo "ufw已关闭"
+}
+ufwadd(){
+
+  read -p "请输入端口号（0-65535）: " port
+sudo ufw allow $port
+echo "端口 $port 已放行"
+
+}
+ufwclose(){
+
+  read -p "请输入端口号（0-65535）: " unport
+sudo ufw  delete allow $unport
+echo "端口 $unport 已关闭"
+
+}
 
 sysinfo(){
 echo "####系统版本############"
@@ -88,7 +119,10 @@ installtools(){
 
 apt install screen -y
 echo "screen 已安装"
-
+apt install git -y
+echo "git 已安装"
+apt install nmap -y
+echo "nmap 已安装"
 }
 
 
@@ -120,9 +154,11 @@ echo "#                                                 #"
 echo "###################################################"
 echo ""
 
-echo "1：只更新apt源 2：更换阿里云源 3："
-echo "4：配置静态ip 5：配置DHCP自动获取 6：install tools"
-echo "7：查看机器基本信息 8： 9："
+echo "1：just update apt源    2：更换aliyun源sources.list    3："
+echo "4：配置静态ip                5：配置DHCP自动获取           6：install screen、git、nmap"
+echo "7：查看机器信息             8：安装&开启防火墙ufw       9：添加ufw允许端口"
+echo "10：查看防火墙ufw状态  11：关闭防火墙ufw               12：关闭ufw允许端口"
+
 read -p "请输入: " number
 
 case $number in
@@ -130,7 +166,7 @@ case $number in
     ;;
     2)  huanyuanfun
     ;;
-    3)  echo '你选择了 3'
+    3)  
     ;;
     4)  staticip
     ;;
@@ -140,11 +176,21 @@ case $number in
     ;;
     7)  sysinfo
     ;;
-    8)  echo '你选择了 4'
+    8)  ufwapt
     ;;
-    9)  echo '你选择了 4'
+    9)  ufwadd
     ;;
-    *)  echo '输入有误脚本#报废#'
+    10)  ufw status
+    ;;
+    11)  ufwdel
+    ;;
+    12)  ufwclose
+    ;;
+    13)  
+    ;;
+    14)  
+    ;;
+    *)  echo '---------输入有误--------!!!!!!!!  #报废#'
 
     ;;
 esac
