@@ -97,6 +97,14 @@ sudo ufw allow $port
 echo "端口 $port 已放行"
 
 }
+ufwstatus(){
+ufw status
+echo "提示：inactive 关闭状态 , active 开启状态"
+
+
+}
+
+
 ufwclose(){
 
   read -p "请输入端口号（0-65535）: " unport
@@ -180,7 +188,7 @@ case $number in
     ;;
     9)  ufwadd
     ;;
-    10)  ufw status
+    10)  ufwstatus
     ;;
     11)  ufwdel
     ;;
