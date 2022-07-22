@@ -164,14 +164,17 @@ echo "ok";;
 staticip(){
 echo "确保原文件手工备份至别的目录，避免重复执行脚本无法找回"
 read -n1 -r -p "请按任意键继续..."
+echo "确保网卡名称ens33 还是其他"
+ifconfig
+read -p "请输入网卡名称（例：ens33）: " ens
 
 
 echo "开始备份原文件"
 sudo cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.backup
-echo "原source list已备份."
+echo "原00-installer-config.yaml已备份."
 
 echo "开始配置静态ip"
-echo "提示：x.x.x.x/x"
+echo "提示：x.x.x.x/x  最后1位子网位数 255.255.255.0 为x.x.x.x/24"
 read -p "请输入网络地址: " ipaddresses
 echo "提示：x.x.x.x"
 read -p "请输入网关: " gateway
@@ -184,7 +187,7 @@ cat <<EOM >/etc/netplan/00-installer-config.yaml
 network:
   version: 2
   ethernets:
-     ens33:
+     $ens:
          dhcp4: no
          addresses: [$ipaddresses]
          gateway4: $gateway
@@ -196,6 +199,27 @@ echo "配置信息成功写入,成功切换ip 、ssh已断开，请使用设置�
 netplan apply
 sleep 1
 echo "配置已应用"
+}
+
+dhcpip(){
+echo "开始配置DHCP"
+echo "确保网卡名称ens33 还是其他"
+ifconfig
+read -p "请输入网卡名称（例：ens33）: " ens
+
+cat <<EOM >/etc/netplan/00-installer-config.yaml
+# This is the network config written by 'subiquity'
+network:
+  ethernets:
+     $ens:
+      dhcp4: true
+  version: 2
+
+EOM
+echo "配置信息成功写入"
+netplan apply
+sleep 1
+echo "DHCP已开启"
 }
 
 ufwapt(){
@@ -264,24 +288,7 @@ echo "nmap 已安装"
 }
 
 
-dhcpip(){
-echo "开始配置DHCP"
 
-
-cat <<EOM >/etc/netplan/00-installer-config.yaml
-# This is the network config written by 'subiquity'
-network:
-  ethernets:
-    ens33:
-      dhcp4: true
-  version: 2
-
-EOM
-echo "配置信息成功写入"
-netplan apply
-sleep 1
-echo "DHCP已开启"
-}
 
 diskinfo(){
 
