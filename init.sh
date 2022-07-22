@@ -135,6 +135,32 @@ sudo systemctl restart rsyslog.service cron.service
 echo "当前系统时间: $(date -R)"
 }
 
+openroot(){
+echo "确保root远程权限未开"
+
+read -n1 -p "Do you want to continue [Y/N]? " answer
+case $answer in
+Y | y) echo
+
+echo "开始备份原文件sshd_config"
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+echo "原文件sshd_config已备份."
+sleep 1
+echo "port 22" >> /etc/ssh/sshd_config
+echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+echo "重启服务中"
+service sshd restart
+
+echo "ok";;
+       
+ N | n) echo 
+       echo "OK, goodbye"
+       exit;;
+ esac   
+
+
+}
+
 staticip(){
 echo "确保原文件手工备份至别的目录，避免重复执行脚本无法找回"
 read -n1 -r -p "请按任意键继续..."
@@ -293,7 +319,7 @@ echo "1：升级 update apt源     2：更换aliyun源sources.list    3：同步
 echo "------------------------------------------------------------------------------------"
 echo "4：配置静态ip            5：配置DHCP自动获取            6：install screen、git、nmap"
 echo "------------------------------------------------------------------------------------"
-echo "7：查看机器信息          8：磁盘信息查看                9："
+echo "7：查看机器信息          8：磁盘信息查看                9：open root user login"
 echo "------------------------------------------------------------------------------------"
 echo "10：查看防火墙-ufw状态    11：添加-ufw允许端口          12：关闭-ufw端口"
 echo "------------------------------------------------------------------------------------"
@@ -321,7 +347,7 @@ case $number in
     ;;
     8)  diskinfo
     ;;
-    9)  
+    9)  openroot
     ;;
     10)  ufwstatus
     ;;
