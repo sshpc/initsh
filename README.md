@@ -10,7 +10,7 @@
 * 输出系统信息 （新增显示磁盘信息）
 * ufw简易配置 （新增持续操作）
 
-###快速使用
+### 快速使用
 ```shell
 wget -O init.sh http://daili.192168.work/initsh/init.sh && chmod +x init.sh && sudo ./init.sh
 ```
