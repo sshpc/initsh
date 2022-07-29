@@ -1,5 +1,14 @@
 #!/bin/bash
- 
+# Ubuntu初始化脚本
+# Author:pinesss<https://gitee.com/pinesss>
+
+
+#定义全局变量
+datevar=$(date)
+
+
+
+
 aptupdatefun(){
 
 echo "------>>开始更新源列表"
@@ -88,7 +97,7 @@ aptupdatefun
 }
 
 echo "开始备份原列表"
-sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
 echo "原source list已备份."
 
 echo "检测你的系统版本为："
@@ -104,7 +113,7 @@ case $sourcesnumber in
     3)  a2004
     ;;
   *)  echo '---------输入有误，脚本终止--------'
-
+exit
     ;;
 esac
 
@@ -143,7 +152,7 @@ case $answer in
 Y | y) echo
 
 echo "开始备份原文件sshd_config"
-sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
 echo "原文件sshd_config已备份."
 sleep 1
 echo "port 22" >> /etc/ssh/sshd_config
@@ -166,20 +175,53 @@ echo "确保原文件手工备份至别的目录，避免重复执行脚本无�
 read -n1 -r -p "请按任意键继续..."
 echo "确保网卡名称ens33 还是其他"
 ifconfig
-read -p "请输入网卡名称（例：ens33）: " ens
+read -p "请输入网卡名称（例：ens33 回车默认ens33）: " ens
 
 
+
+if [[ "$ens" = "" ]]; then
+ens="ens33"
+
+fi
+echo "网卡为" $ens
 echo "开始备份原文件"
-sudo cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.backup
+
+
+
+
+sudo cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
 echo "原00-installer-config.yaml已备份."
 
 echo "开始配置静态ip"
-echo "提示：x.x.x.x/x  最后1位子网位数 255.255.255.0 为x.x.x.x/24"
-read -p "请输入网络地址: " ipaddresses
+
+ipaddresses="errorip"
+read -p "请输入ip地址+网络号（x.x.x.x/x）: " ipaddresses
+
+	until [[  "$ipaddresses"  ]]  ;do
+			echo "$ipaddresses: 网络地址不能为空."
+			read -p "请输入ip地址+网络号（x.x.x.x/x）: " ipaddresses
+
+		done
+
+
+echo "网络地址为：$ipaddresses"
 echo "提示：x.x.x.x"
 read -p "请输入网关: " gateway
-echo "提示：x.x.x.x  备用DNS默认114.114.114.114"
+
+until [[  "$gateway"   ]]; do
+			echo "$gateway: 网关不能为空."
+			read -p "请输入网关: " gateway
+		done
+
+	echo "网关为：$gateway"	
+echo "提示：x.x.x.x  备用DNS已固定为114.114.114.114"
 read -p "请输入主DNS: " nameservers
+until [[  "$nameservers"   ]]; do
+			echo "$nameservers: DNS不能为空."
+			read -p "请输入主DNS: " nameservers
+		done
+
+echo "DNS地址为：$nameservers 114.114.114.114"
 
 
 cat <<EOM >/etc/netplan/00-installer-config.yaml
@@ -205,7 +247,15 @@ dhcpip(){
 echo "开始配置DHCP"
 echo "确保网卡名称ens33 还是其他"
 ifconfig
-read -p "请输入网卡名称（例：ens33）: " ens
+read -p "请输入网卡名称（例：ens33 回车默认ens33）: " ens
+
+
+
+if [[ "$ens" = "" ]]; then
+ens="ens33"
+echo "网卡为" $ens
+
+fi
 
 cat <<EOM >/etc/netplan/00-installer-config.yaml
 # This is the network config written by 'subiquity'
@@ -245,6 +295,10 @@ ufwstatus
 ufwadd(){
 
   read -p "请输入端口号（0-65535）: " port
+  until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
+		echo "$port: 无效端口."
+		read -p "请输入端口号（0-65535）: " port
+	done
 sudo ufw allow $port
 echo "端口 $port 已放行"
 ufwstatus
@@ -261,6 +315,10 @@ echo "提示：inactive 关闭状态 , active 开启状态"
 ufwclose(){
 
   read -p "请输入端口号（0-65535）: " unport
+  until [[ -z "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
+		echo "$unport: 无效端口."
+		read -p "请输入端口号（0-65535）: " unport
+	done
 sudo ufw  delete allow $unport
 echo "端口 $unport 已关闭"
 ufwstatus
@@ -268,13 +326,19 @@ ufwstatus
 }
 
 sysinfo(){
-echo "####系统版本############"
+echo "-----------系统版本------------"
 lsb_release -a
-
-echo "####当前登录用户############"
+echo ""
+echo "---------当前登录用户-------登录时间-----"
 who am i
-echo "####系统运行时间############"
+echo ""
+echo "-------------系统运行时间----当前登录用户数------系统负载----"
+
 uptime
+echo ""
+echo "---------公网ip信息-----------------"
+curl cip.cc
+echo ""
 
 }
 installtools(){
