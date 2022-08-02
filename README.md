@@ -22,5 +22,5 @@ wget  http://wget.192168.work/init.sh && chmod +x init.sh && sudo ./init.sh
 1. chmod +x ./init.sh
 2. ./init.sh
 
-####
+
 
