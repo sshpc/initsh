@@ -8,13 +8,17 @@ datevar=$(date)
 
 
 
-
+#全局函数
 aptupdatefun(){
-
+echo "检查更新"
 echo "------>>开始更新源列表"
 sudo apt-get update -y && apt-get install curl -y
 echo "已更改源列表。所有更新和升级都完成了!"
 }
+
+
+# sys set 系统设置-----------------------############################################################################-----------------------
+sysset(){
 
 huanyuanfun(){
 
@@ -95,14 +99,17 @@ echo "source list已经写入阿里云源."
 sleep 1
 aptupdatefun
 }
-
+sleep 1
 echo "开始备份原列表"
 sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
+sleep 1
 echo "原source list已备份."
-
+sleep 1
 echo "检测你的系统版本为："
 lsb_release -a
+sleep 1
 echo "选择你的Ubuntu版本（其他版本请手动换源）"
+sleep 1
 echo "1：Ubuntu 16.04    2：Ubuntu 18.04(bionic)    3：Ubuntu 20.04(focal)"
 read -p "请输入命令数字: " sourcesnumber
 case $sourcesnumber in
@@ -169,6 +176,49 @@ echo "ok";;
 
 
 }
+
+
+echo " "
+echo "###################################################"
+echo "#                                                 #"
+echo "#         自定义Ubuntu 初始化shell脚本    ufw     #"
+echo "#                                                 #"
+echo "###################################################"
+echo ""
+
+
+
+echo "1：换源    2：同步时间      3：开启root远程登录"
+echo "------------------------------------------------------------------------------------"
+
+echo "7: 返回主页"
+
+echo "0:退出"
+read -p "请输入命令数字: " number
+
+case $number in
+    0)  #退出#
+    ;;
+    1)  huanyuanfun
+    ;;
+    2)  timeok
+    ;;
+    3)  openroot
+    ;;
+
+    7)  ./init.sh
+    ;;
+    *)  echo '---------输入有误，脚本终止--------'
+
+    ;;
+esac
+
+}
+
+
+
+# network set 网络设置-----------------------############################################################################-----------------------
+networkset(){
 
 staticip(){
 echo "确保原文件手工备份至别的目录，避免重复执行脚本无法找回"
@@ -272,7 +322,50 @@ sleep 1
 echo "DHCP已开启"
 }
 
-ufwapt(){
+echo " "
+echo "###################################################"
+echo "#                                                 #"
+echo "#         自定义Ubuntu 初始化shell脚本   网络设置 #"
+echo "#                                                 #"
+echo "###################################################"
+echo ""
+
+
+
+echo "1：配置静态ip    2：启用dhcp动态获取          3："
+echo "------------------------------------------------------------------------------------"
+
+echo "7: 返回主页"
+
+echo "0:退出"
+read -p "请输入命令数字: " number
+
+case $number in
+    0)  #退出#
+    ;;
+    1)  staticip
+    ;;
+    2)  dhcpip
+    ;;
+
+    
+    7)  ./init.sh
+    ;;
+    *)  echo '---------输入有误，脚本终止--------'
+
+    ;;
+esac
+
+}
+
+
+
+
+# ufw & safe 安全配置-----------------------############################################################################-----------------------
+ufwfun(){
+
+
+	ufwapt(){
 apt install ufw -y
 echo "ufw 已安装"
 echo "请输入y以开启ufw"
@@ -311,7 +404,6 @@ echo "提示：inactive 关闭状态 , active 开启状态"
 
 }
 
-
 ufwclose(){
 
   read -p "请输入端口号（0-65535）: " unport
@@ -325,70 +417,14 @@ ufwstatus
 
 }
 
-sysinfo(){
-echo "-----------系统版本------------"
-lsb_release -a
-echo ""
-echo "---------当前登录用户-------登录时间-----"
-who am i
-echo ""
-echo "-------------系统运行时间----当前登录用户数------系统负载----"
-
-uptime
-echo ""
-echo "---------公网ip信息-----------------"
-curl cip.cc
-echo ""
-
-}
-installtools(){
-
-apt install screen -y
-echo "screen 已安装"
-apt install git -y
-echo "git 已安装"
-apt install nmap -y
-echo "nmap 已安装"
-apt install zip -y
-echo "zip 已安装"
-apt install fail2ban -y
-echo "fail2ban 已安装"
-
-
-
-
-}
-
-
-
-
-
-diskinfo(){
-
-echo "\n分区信息:"
-  sudo df -Th
-  sudo lsblk
-  echo -e "\n 磁盘信息："
-  sudo fdisk -l
-  echo -e "\n PV物理卷查看："
-  sudo pvscan
-  echo -e "\n vgs虚拟卷查看："
-  sudo vgs
-  echo -e "\n lvscan逻辑卷扫描:"
-  sudo lvscan
-  echo -e "\n 分区扩展"
-  echo "Ubuntu \n lvextend -L +74G /dev/ubuntu-vg/ubuntu-lv"
-  echo "lsblk"
-  echo -e "ubuntu general \n # resize2fs -p -F /dev/mapper/ubuntu--vg-ubuntu--lv"
-
-
-}
-
 fail2ban(){
 
+echo "检查并安装fail2ban"
+apt install fail2ban -y
+echo "fail2ban 已安装"
 echo "开始配置fail2ban"
 
-echo "确保已安装fail2ban"
+
 
 read -n1 -r -p "请按任意键继续..."
 
@@ -425,61 +461,231 @@ echo "----服务状态----"
 
 }
 
-
-#程序开始---------->>>>>>>>>>>>
 echo " "
 echo "###################################################"
 echo "#                                                 #"
-echo "#         自定义Ubuntu 初始化shell脚本            #"
+echo "#         自定义Ubuntu 初始化shell脚本    ufw     #"
 echo "#                                                 #"
 echo "###################################################"
 echo ""
 
-echo "1：升级 update apt源     2：更换aliyun源sources.list    3：同步系统时间"
+
+
+echo "1：查看防火墙-ufw状态    2：添加-ufw允许端口          3：关闭-ufw端口"
 echo "------------------------------------------------------------------------------------"
-echo "4：配置静态ip            5：配置DHCP自动获取            6：install 常用软件"
+echo "4: 安装&开启防火墙-ufw   5: 关闭防火墙-ufw            6：配置 fail2ban"
 echo "------------------------------------------------------------------------------------"
-echo "7：查看机器信息          8：磁盘信息查看                9：open root user login"
-echo "------------------------------------------------------------------------------------"
-echo "10：查看防火墙-ufw状态    11：添加-ufw允许端口          12：关闭-ufw端口"
-echo "------------------------------------------------------------------------------------"
-echo "13: 安装&开启防火墙-ufw   14: 关闭防火墙-ufw            15：配置 fail2ban"
-echo "------------------------------------------------------------------------------------"
+echo "7: 返回主页"
+
 echo "0:退出"
 read -p "请输入命令数字: " number
 
 case $number in
     0)  #退出#
     ;;
+    1)  ufwstatus
+    ;;
+    2)  ufwadd
+    ;;
+    3)  ufwclose
+    ;;
+    4)  ufwapt
+    ;;
+    5)  ufwdel
+    ;;
+    6)  fail2ban
+    ;;
+    7)  ./init.sh
+    ;;
+    *)  echo '---------输入有误，脚本终止--------'
+
+    ;;
+esac
+
+}
+
+# 系统信息-----------------------############################################################################-----------------------
+linuxinfo(){
+
+
+sysinfo(){
+
+echo "-----------系统版本------------"
+lsb_release -a
+echo ""
+echo "---------当前登录用户-------登录时间-----"
+who am i
+echo ""
+echo "-------------系统运行时间----当前登录用户数------系统负载----"
+
+uptime
+echo ""
+echo "---------公网ip信息-----------------"
+curl cip.cc
+echo ""
+
+}
+diskinfo(){
+
+echo "\n分区信息:"
+  sudo df -Th
+  sudo lsblk
+  echo -e "\n 磁盘信息："
+  sudo fdisk -l
+  echo -e "\n PV物理卷查看："
+  sudo pvscan
+  echo -e "\n vgs虚拟卷查看："
+  sudo vgs
+  echo -e "\n lvscan逻辑卷扫描:"
+  sudo lvscan
+  echo -e "\n 分区扩展"
+  echo "Ubuntu \n lvextend -L +74G /dev/ubuntu-vg/ubuntu-lv"
+  echo "lsblk"
+  echo -e "ubuntu general \n # resize2fs -p -F /dev/mapper/ubuntu--vg-ubuntu--lv"
+
+
+}
+
+echo " "
+echo "###################################################"
+echo "#                                                 #"
+echo "#         自定义Ubuntu 初始化shell脚本   系统信息 #"
+echo "#                                                 #"
+echo "###################################################"
+echo ""
+
+
+
+echo "1：基本信息    2：磁盘信息          "
+echo "------------------------------------------------------------------------------------"
+
+echo "7: 返回主页"
+
+echo "0:退出"
+read -p "请输入命令数字: " number
+
+case $number in
+    0)  #退出#
+    ;;
+    1)  sysinfo
+    ;;
+    2)  diskinfo
+    ;;
+
+  
+    7)  ./init.sh
+    ;;
+    *)  echo '---------输入有误，脚本终止--------'
+
+    ;;
+esac
+
+
+}
+
+
+# install tools 软件安装-----------------------############################################################################-----------------------
+installtools(){
+
+installuseful(){
+
+apt install screen -y
+echo "screen 已安装"
+apt install git -y
+echo "git 已安装"
+apt install nmap -y
+echo "nmap 已安装"
+apt install zip -y
+echo "zip 已安装"
+
+}
+
+
+installphp(){
+
+aptupdatefun
+
+	echo "开始安装php"
+apt install php-dev php-curl php-zip
+apt install php
+	echo "开始安装composer"
+	apt install composer
+
+}
+
+
+
+
+echo " "
+echo "###################################################"
+echo "#                                                 #"
+echo "#         自定义Ubuntu 初始化shell脚本    安装    #"
+echo "#                                                 #"
+echo "###################################################"
+echo ""
+
+
+
+echo "1：安装必备    2：安装PHP及依赖         "
+echo "------------------------------------------------------------------------------------"
+
+echo "7: 返回主页"
+
+echo "0:退出"
+read -p "请输入命令数字: " number
+
+case $number in
+    0)  #退出#
+    ;;
+    1)  installuseful
+    ;;
+    2)  installphp
+    ;;
+    3)  
+    ;;
+
+    7)  ./init.sh
+    ;;
+    *)  echo '---------输入有误，脚本终止--------'
+
+    ;;
+esac
+
+}
+
+
+
+
+# main 程序开始---------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+echo " "
+echo "###################################################"
+echo "#                                                 #"
+echo "#         自定义Ubuntu 初始化shell脚本    主页    #"
+echo "#                                                 #"
+echo "###################################################"
+echo ""
+
+echo "1：update apt 升级源     2：install tools 软件安装    3：ufw & safe 安全配置"
+echo "------------------------------------------------------------------------------------"
+echo "4：sys set 系统设置       5：network set 网络设置       6：linux info 系统信息"
+echo "------------------------------------------------------------------------------------"
+echo "0: exit 退出"
+read -p "Please enter the command number 请输入命令数字: " number
+
+case $number in
+    0)  #退出#
+    ;;
     1)  aptupdatefun
     ;;
-    2)  huanyuanfun
+    2)  installtools
     ;;
-    3)  timeok
+    3)  ufwfun
     ;;
-    4)  staticip
+    4)  sysset
     ;;
-    5)  dhcpip
+    5)  networkset
     ;;
-    6)  installtools
-    ;;
-    7)  sysinfo
-    ;;
-    8)  diskinfo
-    ;;
-    9)  openroot
-    ;;
-    10)  ufwstatus
-    ;;
-    11)  ufwadd
-    ;;
-    12)  ufwclose
-    ;;
-    13)  ufwapt
-    ;;
-    14)  ufwdel
-    ;;
-    15)  fail2ban
+    6)  linuxinfo
     ;;
     *)  echo '---------输入有误，脚本终止--------'
 
