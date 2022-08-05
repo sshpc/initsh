@@ -12,7 +12,7 @@
 
 ### 快速使用
 ```shell
-wget  http://wget.192168.work/init.sh && chmod +x init.sh && sudo ./init.sh
+wget -N  http://wget.192168.work/init.sh && chmod +x init.sh && sudo ./init.sh
 ```
 
 
