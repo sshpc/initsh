@@ -349,7 +349,16 @@ apt install git -y
 echo "git 已安装"
 apt install nmap -y
 echo "nmap 已安装"
+apt install zip -y
+echo "zip 已安装"
+apt install fail2ban -y
+echo "fail2ban 已安装"
+
+
+
+
 }
+
 
 
 
@@ -375,6 +384,46 @@ echo "\n分区信息:"
 
 }
 
+fail2ban(){
+
+echo "开始配置fail2ban"
+
+echo "确保已安装fail2ban"
+
+read -n1 -r -p "请按任意键继续..."
+
+read -p "请输入尝试次数（直接回车默认4次）: " retry
+read -p "请输入拦截后禁止访问的时间（直接回车默认604800s）: " timeban
+
+
+if [[ "$retry" = "" ]]; then
+retry=4
+fi
+
+if [[ "$timeban" = "" ]]; then
+timeban=604800
+fi
+
+cat <<EOM >/etc/fail2ban/jail.d/sshd.local
+
+[ssh-iptables]
+enabled  = true
+filter   = sshd
+action   = iptables[name=SSH, port=ssh, protocol=tcp]
+logpath  = /var/log/auth.log
+maxretry = $retry
+bantime  = $timeban
+
+EOM
+
+ sudo service fail2ban start 
+echo "服务已开启"
+echo ""
+echo "----服务状态----"
+ sudo fail2ban-client status sshd 
+
+
+}
 
 
 #程序开始---------->>>>>>>>>>>>
@@ -388,13 +437,13 @@ echo ""
 
 echo "1：升级 update apt源     2：更换aliyun源sources.list    3：同步系统时间"
 echo "------------------------------------------------------------------------------------"
-echo "4：配置静态ip            5：配置DHCP自动获取            6：install screen、git、nmap"
+echo "4：配置静态ip            5：配置DHCP自动获取            6：install 常用软件"
 echo "------------------------------------------------------------------------------------"
 echo "7：查看机器信息          8：磁盘信息查看                9：open root user login"
 echo "------------------------------------------------------------------------------------"
 echo "10：查看防火墙-ufw状态    11：添加-ufw允许端口          12：关闭-ufw端口"
 echo "------------------------------------------------------------------------------------"
-echo "13: 安装&开启防火墙-ufw   14: 关闭防火墙-ufw"
+echo "13: 安装&开启防火墙-ufw   14: 关闭防火墙-ufw            15：配置 fail2ban"
 echo "------------------------------------------------------------------------------------"
 echo "0:退出"
 read -p "请输入命令数字: " number
@@ -429,6 +478,8 @@ case $number in
     13)  ufwapt
     ;;
     14)  ufwdel
+    ;;
+    15)  fail2ban
     ;;
     *)  echo '---------输入有误，脚本终止--------'
 
