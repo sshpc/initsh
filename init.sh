@@ -178,22 +178,14 @@ echo "ok";;
 }
 
 supportcn(){
+echo ""
+sudo apt-get install zhcon -y
+sudo adduser $(whoami) video
 
-	echo "start copy environment 开始备份原文件"
-sudo cp /etc/environment /etc/environment.bak."$datevar"
 sleep 1
-echo "备份完成 copy ok"
-cat <<EOM >/etc/environment
-LANG="zh_CN.UTF-8"
-LANGUAGE="zh_CN:zh:en_US:en"
-EOM
-
-
-sudo locale-gen zh_CN.UTF-8
-echo "中文已启动"
-
-
-
+sudo zhcon -–utf8
+echo ""
+echo "Please enter 'zhcon -–utf8' "
 
 }
 
