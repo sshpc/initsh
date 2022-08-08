@@ -827,7 +827,7 @@ echo ""
 
 echo "1：update apt （升级源）     2：software（软件安装&卸载）    3：ufw & safe （安全配置）"
 echo "------------------------------------------------------------------------------------"
-echo "4：sys set （系统设置）       5：net set （网络设置）       6：linux info （系统信息）"
+echo "4：sys set （系统&工具）       5：net set （网络设置）       6：linux info （信息查看）"
 echo "------------------------------------------------------------------------------------"
 echo "0: exit 退出"
 read -p "Please enter the command number 请输入命令数字: " number
