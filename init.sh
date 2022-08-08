@@ -177,6 +177,26 @@ echo "ok";;
 
 }
 
+supportcn(){
+
+	echo "start copy environment 开始备份原文件"
+sudo cp /etc/environment /etc/environment.bak."$datevar"
+sleep 1
+echo "备份完成 copy ok"
+cat <<EOM >/etc/environment
+LANG="zh_CN.UTF-8"
+LANGUAGE="zh_CN:zh:en_US:en"
+EOM
+
+
+sudo locale-gen zh_CN.UTF-8
+echo "中文已启动"
+
+
+
+
+}
+
 
 echo " "
 echo "#########################################################################################"
@@ -188,7 +208,7 @@ echo ""
 
 
 
-echo "1：换源    2：同步时间      3：开启root远程登录"
+echo "1：换源    2：同步时间      3：开启root远程登录      4：support Chinese 中文显示"
 echo "------------------------------------------------------------------------------------"
 
 echo "7: 返回主页"
@@ -205,6 +225,8 @@ case $number in
     ;;
     3)  openroot
     ;;
+    4)  supportcn
+	;;
 
     7)  ./init.sh
     ;;
@@ -619,7 +641,7 @@ installtools(){
 
 installuseful(){
 
-apt install net-tools
+apt install net-tools -y
 echo "net-tools 已安装"
 apt install screen -y
 echo "screen 已安装"
@@ -627,7 +649,7 @@ apt install git -y
 echo "git 已安装"
 apt install nmap -y
 echo "nmap 已安装"
-apt install iperf
+apt install iperf -y
 echo "iperf已安装"
 apt install zip -y
 echo "zip 已安装"
@@ -640,18 +662,50 @@ installphp(){
 aptupdatefun
 
 	echo "开始安装php"
-apt install php-dev php-curl php-zip
-apt install php
+apt install php-dev  -y
+
+apt install php-curl  -y
+apt install php-zip -y
+apt install php -y
 	echo "开始安装composer"
-	apt install composer
+	apt install composer -y
 
 }
+
+
+removephp(){
+	echo ""
+	
+echo "开始卸载php"
+apt remove php -y
+ apt-get --purge remove php -y
+
+ apt-get --purge remove php-* -y
+ apt-get autoremove php -y
+echo ""
+
+echo "删除所有包含php的文件"
+rm -rf /etc/php
+rm -rf /etc/init.d/php
+find  /etc  -name  *php* -print0 | xargs -0 rm -rf 
+
+echo "清除dept列表"
+apt purge `dpkg -l | grep php| awk '{print $2}' |tr "\n" " "`
+
+echo ""
+echo "卸载完成"
+
+echo ""
+
+}
+
+
 installapache(){
 
 aptupdatefun
 
 	echo "开始安装apache"
-apt install apache2
+apt install apache2 -y
 	
 
 }
@@ -662,14 +716,15 @@ removenginx(){
 service nginx stop
 echo "开始卸载nginx"
 apt remove nginx -y
- apt-get --purge remove nginx
- apt-get --purge remove nginx-common
- apt-get --purge remove nginx-core
+ apt-get --purge remove nginx -y
+ apt-get --purge remove nginx-common -y
+ apt-get --purge remove nginx-core -y
 echo ""
 
 echo "删除所有包含nginx的文件"
 
 find  /  -name  nginx* -print0 | xargs -0 rm -rf 
+echo ""
 echo "卸载完成"
 
 echo ""
@@ -682,9 +737,9 @@ removeapache(){
 service apache2 stop
 echo "开始卸载apache"
 apt remove apache2 -y
- apt-get --purge remove apache2
- apt-get --purge remove apache2-common
- apt-get --purge remove apache2-utils
+ apt-get --purge remove apache2 -y
+ apt-get --purge remove apache2-common -y
+ apt-get --purge remove apache2-utils -y
  apt-get autoremove apache2
 echo ""
 
@@ -692,6 +747,7 @@ echo "删除所有包含apache的文件"
 rm -rf /etc/apache2
 rm -rf /etc/init.d/apache2
 find  /  -name  apache2* -print0 | xargs -0 rm -rf 
+echo ""
 echo "卸载完成"
 
 echo ""
@@ -712,7 +768,7 @@ echo ""
 
 echo "1：安装常用必备    2：安装PHP及依赖      3.安装 Apache    4.               "
 echo "------------------------------------------------------------------------------------"
-echo "5：卸载nginx    6： 卸载Apache     7.     8.              "
+echo "5：卸载nginx    6： 卸载Apache     7. 卸载php    8.              "
 echo "------------------------------------------------------------------------------------"
 
 echo "9: 返回主页"
@@ -735,7 +791,10 @@ case $number in
     ;;
     6)  removeapache
     ;;
-
+    7)  removephp
+	;;
+	8)  
+    ;;
     9)  ./init.sh
     ;;
     *)  echo '---------输入有误，脚本终止--------'
