@@ -6,14 +6,397 @@
 #定义全局变量
 datevar=$(date)
 
-
-
 #全局函数
 aptupdatefun(){
 echo "检查更新"
 echo "------>>开始更新源列表"
 sudo apt-get update -y && apt-get install curl -y
 echo "已更改源列表。所有更新和升级都完成了!"
+}
+
+
+
+
+
+# install tools 软件安装-----------------------###################################################################################### install tools 软件安装############################################-----------------------
+installtools(){
+
+
+	installroot(){
+apt-get update -y && apt-get install curl -y
+
+
+apt install net-tools -y
+echo "net-tools 已安装"
+apt install  vim -y
+apt install  openssh-server -y
+echo "vim 和 ssh 已安装"
+
+
+	}
+
+installuseful(){
+
+aptupdatefun
+apt install screen -y
+echo "screen 已安装"
+apt install git -y
+echo "git 已安装"
+apt install nmap -y
+echo "nmap 已安装"
+apt install iperf -y
+echo "iperf已安装"
+apt install zip -y
+echo "zip 已安装"
+
+}
+
+
+installphp(){
+
+aptupdatefun
+
+	echo "开始安装php"
+apt install php-dev  -y
+
+apt install php-curl  -y
+apt install php-zip -y
+apt install php -y
+	echo "开始安装composer"
+	apt install composer -y
+
+}
+
+
+removephp(){
+	echo ""
+	
+echo "开始卸载php"
+apt remove php -y
+ apt-get --purge remove php -y
+
+ apt-get --purge remove php-* -y
+ apt-get autoremove php -y
+echo ""
+
+echo "删除所有包含php的文件"
+rm -rf /etc/php
+rm -rf /etc/init.d/php
+find  /etc  -name  *php* -print0 | xargs -0 rm -rf 
+
+echo "清除dept列表"
+apt purge `dpkg -l | grep php| awk '{print $2}' |tr "\n" " "`
+
+echo ""
+echo "卸载完成"
+
+echo ""
+
+}
+
+
+
+removenginx(){
+	echo ""
+	echo "服务关闭"
+service nginx stop
+echo "开始卸载nginx"
+apt remove nginx -y
+ apt-get --purge remove nginx -y
+ apt-get --purge remove nginx-common -y
+ apt-get --purge remove nginx-core -y
+echo ""
+
+echo "删除所有包含nginx的文件"
+
+find  /  -name  nginx* -print0 | xargs -0 rm -rf 
+echo ""
+echo "卸载完成"
+
+echo ""
+
+}
+
+removeapache(){
+	echo ""
+	echo "服务关闭"
+service apache2 stop
+echo "开始卸载apache"
+apt remove apache2 -y
+ apt-get --purge remove apache2 -y
+ apt-get --purge remove apache2-common -y
+ apt-get --purge remove apache2-utils -y
+ apt-get autoremove apache2
+echo ""
+
+echo "删除所有包含apache的文件"
+rm -rf /etc/apache2
+rm -rf /etc/init.d/apache2
+find  /  -name  apache2* -print0 | xargs -0 rm -rf 
+echo ""
+echo "卸载完成"
+
+echo ""
+
+}
+
+removedocker(){
+
+docker kill $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+docker rmi $(docker images -q)
+systemctl stop docker
+service docker stop
+
+
+sudo apt-get autoremove docker docker-ce docker-engine  docker.io  containerd runc
+dpkg -l | grep docker
+sudo apt-get autoremove docker-ce-*
+sudo rm -rf /etc/systemd/system/docker.service.d
+sudo rm -rf /var/lib/docker
+rm -rf /etc/docker
+rm -rf /run/docker
+rm -rf /var/lib/dockershim
+umount /var/lib/docker/devicemapper
+
+echo ""
+echo "卸载完成"
+
+echo ""
+
+}
+
+removev2(){
+
+systemctl stop v2ray
+
+systemctl disable v2ray
+
+
+service v2ray stop
+
+update-rc.d -f v2ray remove
+
+rm -rf /etc/v2ray/*
+
+rm -rf /usr/bin/v2ray/*
+
+rm -rf /var/log/v2ray/*
+
+rm -rf /lib/systemd/system/v2ray.service
+
+rm -rf /etc/init.d/v2ray
+
+
+
+}
+
+
+echo " "
+echo "#########################################################################################"
+echo "#                                                 #"
+echo "#         自定义Ubuntu 初始化shell脚本    安装    #"
+echo "#                                                 #"
+echo "#########################################################################################"
+echo ""
+
+
+
+echo "1：安装核心软件    2： 安装常用软件     3.    4. 安装PHP及依赖              "
+echo "------------------------------------------------------------------------------------"
+echo "5：卸载nginx    6： 卸载Apache     7. 卸载php    8. 卸载docker             "
+echo "------------------------------------------------------------------------------------"
+echo "9：卸载v2ray                "
+echo "------------------------------------------------------------------------------------"
+echo "99: 返回主页"
+
+echo "0:退出"
+echo ""
+read -p "请输入命令数字: " number
+
+case $number in
+    0)  #退出#
+    ;;
+    1)  installroot
+    ;;
+    2)  installuseful
+    ;;
+    3)  
+    ;;
+    4)  installphp 
+    ;;
+    5)  removenginx
+    ;;
+    6)  removeapache
+    ;;
+    7)  removephp
+	;;
+	8)  removedocker
+    ;;
+	9)  removev2
+    ;;
+
+    99)  ./init.sh
+    ;;
+    *)  echo '---------输入有误，脚本终止--------'
+
+    ;;
+esac
+
+}
+
+
+# ufw & safe 安全配置-----------------------################################################################################## ufw & safe 安全配置###############################-----------------------
+ufwfun(){
+
+
+	ufwapt(){
+apt install ufw -y
+echo "ufw 已安装"
+echo "请输入y以开启ufw"
+ufw enable 
+echo "ufw已开启"
+sudo ufw allow 22
+echo "已配置允许 22 端口"
+sudo ufw default deny
+echo "已配置关闭所有外部对本机的访问"
+ufwstatus
+./init.sh 3
+
+}
+ufwdel(){
+sudo ufw disable 
+echo "ufw已关闭"
+ufwstatus
+
+}
+ufwadd(){
+
+  read -p "请输入端口号（0-65535）: " port
+  until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
+		echo "$port: 无效端口."
+		read -p "请输入端口号（0-65535）: " port
+	done
+sudo ufw allow $port
+echo "端口 $port 已放行"
+ufwstatus
+
+}
+ufwstatus(){
+ufw status
+echo "提示：inactive 关闭状态 , active 开启状态"
+./init.sh 3
+
+}
+
+ufwclose(){
+
+  read -p "请输入端口号（0-65535）: " unport
+  until [[ -z "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
+		echo "$unport: 无效端口."
+		read -p "请输入端口号（0-65535）: " unport
+	done
+sudo ufw  delete allow $unport
+echo "端口 $unport 已关闭"
+ufwstatus
+./init.sh 3
+}
+
+fail2ban(){
+
+echo "检查并安装fail2ban"
+apt install fail2ban -y
+echo "fail2ban 已安装"
+echo "开始配置fail2ban"
+
+
+
+read -n1 -r -p "请按任意键继续..."
+
+read -p "请输入尝试次数（直接回车默认4次）: " retry
+read -p "请输入拦截后禁止访问的时间（直接回车默认604800s）: " timeban
+
+
+if [[ "$retry" = "" ]]; then
+retry=4
+fi
+
+if [[ "$timeban" = "" ]]; then
+timeban=604800
+fi
+
+cat <<EOM >/etc/fail2ban/jail.d/sshd.local
+
+[ssh-iptables]
+enabled  = true
+filter   = sshd
+action   = iptables[name=SSH, port=ssh, protocol=tcp]
+logpath  = /var/log/auth.log
+maxretry = $retry
+bantime  = $timeban
+
+EOM
+
+ sudo service fail2ban start 
+echo "服务已开启"
+echo ""
+echo "----服务状态----"
+ sudo fail2ban-client status sshd 
+
+
+}
+
+f2bstatus(){
+sudo fail2ban-client status sshd 
+
+}
+
+echo " "
+echo "#########################################################################################"
+echo "#                                                 #"
+echo "#         自定义Ubuntu 初始化shell脚本    ufw     #"
+echo "#                                                 #"
+echo "#########################################################################################"
+echo ""
+
+
+
+echo "1：查看防火墙-ufw状态    2：添加-ufw允许端口          3：关闭-ufw端口"
+echo "------------------------------------------------------------------------------------"
+echo "4: 安装&开启防火墙-ufw   5: 关闭防火墙-ufw            6：配置 fail2ban"
+echo "------------------------------------------------------------------------------------"
+echo "8: fail2ban查看状态           "
+echo "------------------------------------------------------------------------------------"
+echo "99: 返回主页"
+
+echo "0:退出"
+echo ""
+read -p "请输入命令数字: " number
+
+case $number in
+    0)  #退出#
+    ;;
+    1)  ufwstatus
+    ;;
+    2)  ufwadd
+    ;;
+    3)  ufwclose
+    ;;
+    4)  ufwapt
+    ;;
+    5)  ufwdel
+    ;;
+    6)  fail2ban
+    ;;
+    99)  ./init.sh
+    ;;
+    8)  f2bstatus
+	;;
+    *)  echo '---------输入有误，脚本终止--------'
+
+    ;;
+esac
+
 }
 
 
@@ -218,9 +601,10 @@ echo "--------------------------------------------------------------------------
 echo ""
 echo "5.生成ssh公钥           "
 echo "------------------------------------------------------------------------------------"
-echo "7: 返回主页"
+echo "99: 返回主页"
 
 echo "0:退出"
+echo ""
 read -p "请输入命令数字: " number
 
 case $number in
@@ -237,7 +621,7 @@ case $number in
 	5)  sshkey
 	;;
 
-    7)  ./init.sh
+    99)  ./init.sh
     ;;
     *)  echo '---------输入有误，脚本终止--------'
 
@@ -245,7 +629,6 @@ case $number in
 esac
 
 }
-
 
 
 # network set 网络设置-----------------------########################################################################################### network set 网络设置##############################-----------------------
@@ -366,9 +749,10 @@ echo ""
 echo "1：配置静态ip    2：启用dhcp动态获取          3："
 echo "------------------------------------------------------------------------------------"
 
-echo "7: 返回主页"
+echo "99: 返回主页"
 
 echo "0:退出"
+echo ""
 read -p "请输入命令数字: " number
 
 case $number in
@@ -380,7 +764,7 @@ case $number in
     ;;
 
     
-    7)  ./init.sh
+    99)  ./init.sh
     ;;
     *)  echo '---------输入有误，脚本终止--------'
 
@@ -392,148 +776,6 @@ esac
 
 
 
-# ufw & safe 安全配置-----------------------################################################################################## ufw & safe 安全配置###############################-----------------------
-ufwfun(){
-
-
-	ufwapt(){
-apt install ufw -y
-echo "ufw 已安装"
-echo "请输入y以开启ufw"
-ufw enable 
-echo "ufw已开启"
-sudo ufw allow 22
-echo "已配置允许 22 端口"
-sudo ufw default deny
-echo "已配置关闭所有外部对本机的访问"
-ufwstatus
-./init.sh
-
-}
-ufwdel(){
-sudo ufw disable 
-echo "ufw已关闭"
-ufwstatus
-
-}
-ufwadd(){
-
-  read -p "请输入端口号（0-65535）: " port
-  until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
-		echo "$port: 无效端口."
-		read -p "请输入端口号（0-65535）: " port
-	done
-sudo ufw allow $port
-echo "端口 $port 已放行"
-ufwstatus
-
-}
-ufwstatus(){
-ufw status
-echo "提示：inactive 关闭状态 , active 开启状态"
-./init.sh
-
-}
-
-ufwclose(){
-
-  read -p "请输入端口号（0-65535）: " unport
-  until [[ -z "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
-		echo "$unport: 无效端口."
-		read -p "请输入端口号（0-65535）: " unport
-	done
-sudo ufw  delete allow $unport
-echo "端口 $unport 已关闭"
-ufwstatus
-
-}
-
-fail2ban(){
-
-echo "检查并安装fail2ban"
-apt install fail2ban -y
-echo "fail2ban 已安装"
-echo "开始配置fail2ban"
-
-
-
-read -n1 -r -p "请按任意键继续..."
-
-read -p "请输入尝试次数（直接回车默认4次）: " retry
-read -p "请输入拦截后禁止访问的时间（直接回车默认604800s）: " timeban
-
-
-if [[ "$retry" = "" ]]; then
-retry=4
-fi
-
-if [[ "$timeban" = "" ]]; then
-timeban=604800
-fi
-
-cat <<EOM >/etc/fail2ban/jail.d/sshd.local
-
-[ssh-iptables]
-enabled  = true
-filter   = sshd
-action   = iptables[name=SSH, port=ssh, protocol=tcp]
-logpath  = /var/log/auth.log
-maxretry = $retry
-bantime  = $timeban
-
-EOM
-
- sudo service fail2ban start 
-echo "服务已开启"
-echo ""
-echo "----服务状态----"
- sudo fail2ban-client status sshd 
-
-
-}
-
-echo " "
-echo "#########################################################################################"
-echo "#                                                 #"
-echo "#         自定义Ubuntu 初始化shell脚本    ufw     #"
-echo "#                                                 #"
-echo "#########################################################################################"
-echo ""
-
-
-
-echo "1：查看防火墙-ufw状态    2：添加-ufw允许端口          3：关闭-ufw端口"
-echo "------------------------------------------------------------------------------------"
-echo "4: 安装&开启防火墙-ufw   5: 关闭防火墙-ufw            6：配置 fail2ban"
-echo "------------------------------------------------------------------------------------"
-echo "7: 返回主页"
-
-echo "0:退出"
-read -p "请输入命令数字: " number
-
-case $number in
-    0)  #退出#
-    ;;
-    1)  ufwstatus
-    ;;
-    2)  ufwadd
-    ;;
-    3)  ufwclose
-    ;;
-    4)  ufwapt
-    ;;
-    5)  ufwdel
-    ;;
-    6)  fail2ban
-    ;;
-    7)  ./init.sh
-    ;;
-    *)  echo '---------输入有误，脚本终止--------'
-
-    ;;
-esac
-
-}
 
 # 系统信息-----------------------########################################################################################################### 系统信息-#####################-----------------------
 linuxinfo(){
@@ -617,9 +859,10 @@ echo ""
 echo "1：版本信息    2：磁盘信息     3：网络信息    4.网络测速（外网） "
 echo "------------------------------------------------------------------------------------"
 
-echo "7: 返回主页"
+echo "99: 返回主页"
 
 echo "0:退出"
+echo ""
 read -p "请输入命令数字: " number
 
 case $number in
@@ -634,7 +877,7 @@ case $number in
  4) netfast
     ;;
   
-    7)  ./init.sh
+    99)  ./init.sh
     ;;
     *)  echo '---------输入有误，脚本终止--------'
 
@@ -645,166 +888,213 @@ esac
 }
 
 
-# install tools 软件安装-----------------------###################################################################################### install tools 软件安装############################################-----------------------
-installtools(){
+# docker操作-----------------------########################################################################################################### docker操作-#####################-----------------------
 
-installuseful(){
+dockermain(){
 
-apt install net-tools -y
-echo "net-tools 已安装"
-apt install screen -y
-echo "screen 已安装"
-apt install git -y
-echo "git 已安装"
-apt install nmap -y
-echo "nmap 已安装"
-apt install iperf -y
-echo "iperf已安装"
-apt install zip -y
-echo "zip 已安装"
+
+
+	dockerps(){
+
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+docker ps 
+echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+
+	}
+
+	dockerpsa(){
+
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+docker ps -a
+echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+		
+	}
+
+	dockerimages(){
+echo "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "
+docker images
+echo "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "
+	}
+
+dockerrund(){
+	echo " "
+dockerimages
+echo ""
+read -p "请输入镜像包名或idREPOSITORY: " dcimage
+
+read -p "请输入容器端口: " conport
+read -p "请输入宿主机端口: " muport
+
+read -p "请输入执行参数: " param
+
+
+
+
+
+
+docker run -d -p $muport:$conport $dcimage $param
+
+
+echo "$dcimage 已在后台运行中"
+
+
+}
+
+dockerrunit(){
+	echo " "
+docker images
+echo ""
+read -p "请输入镜像包名或idREPOSITORY: " dcimage
+
+read -p "请输入容器端口: " conport
+read -p "请输入宿主机端口: " muport
+
+read -p "请输入执行参数(默认/bin/bash): " param
+
+if [[ "$param" = "" ]]; then
+param="/bin/bash"
+
+fi
+
+
+
+
+docker run -it -p $muport:$conport $dcimage $param
+
+
+echo "$dcimage 后台运行中"
+
 
 }
 
 
-installphp(){
+dockerexec(){
 
-aptupdatefun
+	echo " "
+dockerps
+echo ""
 
-	echo "开始安装php"
-apt install php-dev  -y
 
-apt install php-curl  -y
-apt install php-zip -y
-apt install php -y
-	echo "开始安装composer"
-	apt install composer -y
+read -p "请输入容器名或id: " containerd
+read -p "请输入执行参数(默认/bin/bash): " param
+
+if [[ "$param" = "" ]]; then
+param="/bin/bash"
+
+fi
+
+docker exec -it $containerd $param
+
 
 }
 
-
-removephp(){
-	echo ""
-	
-echo "开始卸载php"
-apt remove php -y
- apt-get --purge remove php -y
-
- apt-get --purge remove php-* -y
- apt-get autoremove php -y
+opencon(){
+	echo " "
+dockerpsa
 echo ""
 
-echo "删除所有包含php的文件"
-rm -rf /etc/php
-rm -rf /etc/init.d/php
-find  /etc  -name  *php* -print0 | xargs -0 rm -rf 
 
-echo "清除dept列表"
-apt purge `dpkg -l | grep php| awk '{print $2}' |tr "\n" " "`
+read -p "请输入容器名或id: " containerd
+docker start $containerd
 
 echo ""
-echo "卸载完成"
+echo "正在运行的容器 "
 
+dockerps
+}
+stopcon(){
+	echo " "
+dockerps 
 echo ""
+
+
+read -p "请输入容器名或id: " containerd
+docker stop $containerd
+
+echo "正在运行的容器 "
+
+dockerps
+
 
 }
+rmcon(){
+	echo " "
+dockerpsa
+echo ""
 
 
-installapache(){
+read -p "请输入容器名或id: " containerd
+docker rm -f $containerd
 
-aptupdatefun
+echo "所有容器 "
 
-	echo "开始安装apache"
-apt install apache2 -y
-	
-
+dockerpsa
 }
-
-removenginx(){
-	echo ""
-	echo "服务关闭"
-service nginx stop
-echo "开始卸载nginx"
-apt remove nginx -y
- apt-get --purge remove nginx -y
- apt-get --purge remove nginx-common -y
- apt-get --purge remove nginx-core -y
-echo ""
-
-echo "删除所有包含nginx的文件"
-
-find  /  -name  nginx* -print0 | xargs -0 rm -rf 
-echo ""
-echo "卸载完成"
-
-echo ""
-
-}
-
-removeapache(){
-	echo ""
-	echo "服务关闭"
-service apache2 stop
-echo "开始卸载apache"
-apt remove apache2 -y
- apt-get --purge remove apache2 -y
- apt-get --purge remove apache2-common -y
- apt-get --purge remove apache2-utils -y
- apt-get autoremove apache2
-echo ""
-
-echo "删除所有包含apache的文件"
-rm -rf /etc/apache2
-rm -rf /etc/init.d/apache2
-find  /  -name  apache2* -print0 | xargs -0 rm -rf 
-echo ""
-echo "卸载完成"
-
-echo ""
-
-}
-
 
 
 echo " "
-echo "#########################################################################################"
-echo "#                                                 #"
-echo "#         自定义Ubuntu 初始化shell脚本    安装    #"
-echo "#                                                 #"
-echo "#########################################################################################"
+echo "# ######################docker操作######################"
 echo ""
 
 
 
-echo "1：安装常用必备    2：安装PHP及依赖      3.安装 Apache    4.               "
+echo "1：安装docker       2:查看docker镜像     3:查看正在运行的容器       4: 查看所有的容器"
 echo "------------------------------------------------------------------------------------"
-echo "5：卸载nginx    6： 卸载Apache     7. 卸载php    8.              "
+echo "5:后台运行一个容器       6:运行一个终端交互容器      7:         8: 进入交互式容器"
 echo "------------------------------------------------------------------------------------"
-
-echo "9: 返回主页"
+echo "9:开启一个容器         10:停止一个容器         11:删除一个容器         12:"
+echo "------------------------------------------------------------------------------------"
+echo "99: 返回主页"
 
 echo "0:退出"
+echo ""
+
+
 read -p "请输入命令数字: " number
+
+
 
 case $number in
     0)  #退出#
     ;;
-    1)  installuseful
+    1)  apt install docker -y
     ;;
-    2)  installphp
+    2) 
+
+dockerimages 
+
+		./init.sh 7
     ;;
-    3)  installapache
+    3) 
+dockerps
+./init.sh 7
     ;;
-    4)  
+ 	4) 
+dockerpsa
+./init.sh 7
     ;;
-    5)  removenginx
-    ;;
-    6)  removeapache
-    ;;
-    7)  removephp
+    5) dockerrund
+./init.sh 7
 	;;
-	8)  
-    ;;
-    9)  ./init.sh
+    6) dockerrunit
+./init.sh 7
+	;;
+	7) 
+	;;
+	8) dockerexec
+	;;
+	9) opencon
+./init.sh 7
+	;;
+	10) stopcon
+./init.sh 7
+	;;
+	11) rmcon
+./init.sh 7
+	;;
+	12) 
+	;;
+    99)  ./init.sh
     ;;
     *)  echo '---------输入有误，脚本终止--------'
 
@@ -812,25 +1102,38 @@ case $number in
 esac
 
 }
+
 
 
 
 
 # main 程序开始---------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>># main 程序开始->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+number="$1"
+
+
+if [[ "$number" = "" ]]; then
+
 echo " "
-echo "#########################################################################################"
+echo "###################################################"
 echo "#                                                 #"
 echo "#         自定义Ubuntu 初始化shell脚本    主页    #"
 echo "#                                                 #"
-echo "#########################################################################################"
+echo "###################################################"
 echo ""
 
-echo "1：update apt （升级源）     2：software（软件安装&卸载）    3：ufw & safe （安全配置）"
+echo "1：update apt （升级源）     2：software（软件安装&卸载）    3：ufw & safe （防火墙安全）"
 echo "------------------------------------------------------------------------------------"
-echo "4：sys set （系统&工具）       5：net set （网络设置）       6：linux info （信息查看）"
+echo "4：sys set （系统&工具）     5：net set （本地网络设置）     6：info （信息查看）"
+echo "------------------------------------------------------------------------------------"
+echo "7：docker （docker操作）     "
 echo "------------------------------------------------------------------------------------"
 echo "0: exit 退出"
+echo ""
+
+
+
 read -p "Please enter the command number 请输入命令数字: " number
+fi
 
 case $number in
     0)  #退出#
@@ -846,6 +1149,8 @@ case $number in
     5)  networkset
     ;;
     6)  linuxinfo
+    ;;
+    7)  dockermain
     ;;
     *)  echo '---------输入有误，脚本终止--------'
 
