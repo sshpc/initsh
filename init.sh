@@ -53,8 +53,7 @@ software() {
         apt install php-curl -y
         apt install php-zip -y
         apt install php -y
-        echo "开始安装composer"
-        apt install composer -y
+        
 
     }
 
