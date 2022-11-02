@@ -48,12 +48,7 @@ software() {
         aptupdatefun
 
         echo "开始安装php"
-        apt install php-dev -y
-
-        apt install php-curl -y
-        apt install php-zip -y
-        apt install php -y
-        
+        apt install php-dev php-curl php-zip -y
 
     }
 
@@ -174,6 +169,39 @@ software() {
 
     }
 
+    xuiinstall() {
+
+        bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
+    }
+
+    cfpinstall() {
+
+        echo "开始克隆仓库"
+        git clone https://git.lidsen.cn:16116/root/vpscfptools.git
+        echo "完成克隆"
+        installphp
+        echo "php 检查完成"
+        nohup php vpscfptools/server.php start >vpscfptools/logs/server.log 2>&1 &
+        echo "server 尝试开始"
+
+        sleep 2
+        cfpstatus
+
+    }
+
+    cfpstart() {
+        nohup php vpscfptools/server.php start >vpscfptools/logs/server.log 2>&1 &
+    }
+
+    cfpstop() {
+        php /root/vpscfptools/server.php stop
+    }
+
+    cfpstatus() {
+
+        php /root/vpscfptools/server.php status
+    }
+
     echo " "
     echo "#########################################################################################"
 
@@ -182,9 +210,15 @@ software() {
     echo "#########################################################################################"
     echo ""
 
-    echo "1:update apt （升级源)    2: 安装核心软件     3.安装常用软件    4. 安装PHP及依赖              "
+    echo "1:update apt （升级源)    2: 安装核心软件     3.安装常用软件    4. 安装x-ui              "
     echo "------------------------------------------------------------------------------------"
+    echo "=======环境彻底卸载========"
     echo "5:卸载nginx    6: 卸载Apache     7. 卸载php    8. 卸载docker    9:卸载v2ray         "
+    echo "------------------------------------------------------------------------------------"
+    echo "=======cfp发信========"
+    echo "30:一键安装、配置cfp发信服务器(新机器,root目录,包括安装PHP和开启)  31. 查看cfp-server状态 "
+    echo "------------------------------------------------------------------------------------"
+    echo "32:安装PHP及依赖    33: 开启cfpserver  34. 停止cfpserver   "
     echo "------------------------------------------------------------------------------------"
 
     echo "99: 返回主页"
@@ -210,7 +244,7 @@ software() {
         ;;
 
     4)
-        installphp
+        xuiinstall
         ;;
     5)
         removenginx
@@ -226,6 +260,23 @@ software() {
         ;;
     9)
         removev2
+        ;;
+    30)
+        cfpinstall
+        ;;
+
+    31)
+        cfpstatus
+
+        ;;
+    32)
+        installphp
+        ;;
+    33)
+        cfpstart
+        ;;
+    34)
+        cfpstop
         ;;
 
     99)
@@ -334,10 +385,9 @@ EOM
 
     }
 
+    ssherror() {
 
-    ssherror(){
-
-    sudo lastb | grep root | awk '{print $3}' | sort | uniq
+        sudo lastb | grep root | awk '{print $3}' | sort | uniq
     }
 
     echo " "
@@ -386,10 +436,10 @@ EOM
         ;;
     9)
         ssherror
-        
+
         ;;
 
-    
+    \
         99)
         ./init.sh
         ;;
@@ -588,14 +638,14 @@ EOM
         cat ~/.ssh/id_ed25519.pub
     }
 
-    sshpublogin(){
+    sshpublogin() {
         echo "客户端生成公钥命令---*如果存在就不要设置了"
         echo "ssh-keygen -t rsa"
         read -n1 -r -p "请按任意键继续..."
 
         read -p "请将公钥粘贴至命令行: " clientpub
-        
-        echo $clientpub >> ~/.ssh/authorized_keys
+
+        echo $clientpub >>~/.ssh/authorized_keys
 
         echo "写入成功 可以尝试登录"
 
@@ -636,7 +686,6 @@ EOM
 
     }
 
-
     echo " "
     echo "#########################################################################################"
 
@@ -675,19 +724,21 @@ EOM
     5)
         sshkey
         ;;
-        6)
+    6)
         sshpublogin
         ;;
 
-        9) sysinfo
+    9)
+        sysinfo
         ./init.sh 4
         ;;
-        10) diskinfo
+    10)
+        diskinfo
         ./init.sh 4
         ;;
 
-
-    99)
+    \
+        99)
         ./init.sh
         ;;
     *)
@@ -846,12 +897,14 @@ EOM
     2)
         dhcpip
         ;;
-    3) netinfo 
-    ;;
-    4) netfast 
-    ;;
+    3)
+        netinfo
+        ;;
+    4)
+        netfast
+        ;;
 
-    
+    \
         99)
         ./init.sh
         ;;
