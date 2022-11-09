@@ -1,23 +1,20 @@
-## 一个简单的Ubuntu初始化脚本
+## 一个简单的 Ubuntu 18.04 + 脚本
 
-
-### 简单介绍
+### 介绍
 
 * 安全配置
 * 一键换源
-* 交互配置静态ip  
+* 交互配置静态ip
 * 一键安装常用工具
-* 常用系统信息查看 
-* ufw交互配置 
+* 常用系统信息查看
+* ufw交互配置
 * docker
-
-
-
 
 #### 或 git clone 从这里开始（以root身份）
 
 1. chmod +x ./init.sh
 2. ./init.sh
 
+一键使用
 
-
+`wget -N  http://wget.192168.work/init.sh && chmod +x init.sh && sudo ./init.sh`

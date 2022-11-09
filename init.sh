@@ -169,6 +169,35 @@ software() {
 
     }
 
+    removemysql() {
+
+        echo ""
+        echo "服务关闭"
+        service mysql-server stop
+        echo "开始卸载mysql"
+
+        sudo apt-get autoremove --purge mysql-server -y
+        sudo apt-get remove mysql-common -y
+
+        sudo apt-get remove dbconfig-mysql -y
+        sudo apt-get remove mysql-client -y
+        sudo apt-get remove mysql-client-5.7 -y
+        sudo apt-get remove mysql-client-core-5.7 -y
+
+        sudo apt-get remove apparmor -y
+        sudo apt-get autoremove mysql* --purge -y
+        dpkg -l | grep ^rc | awk '{print $2}' | sudo xargs dpkg -P
+
+        sudo rm /var/lib/mysql/ -R
+        sudo rm /etc/mysql/ -R
+
+        echo ""
+        echo "卸载完成"
+
+        echo ""
+
+    }
+
     xuiinstall() {
 
         bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
@@ -210,11 +239,16 @@ software() {
     echo "#########################################################################################"
     echo ""
 
+    echo "=======安装========"
     echo "1:update apt （升级源)    2: 安装核心软件     3.安装常用软件    4. 安装x-ui              "
     echo "------------------------------------------------------------------------------------"
+
     echo "=======环境彻底卸载========"
     echo "5:卸载nginx    6: 卸载Apache     7. 卸载php    8. 卸载docker    9:卸载v2ray         "
     echo "------------------------------------------------------------------------------------"
+    echo "10:卸载mysql             "
+    echo "------------------------------------------------------------------------------------"
+
     echo "=======cfp发信========"
     echo "30:一键安装、配置cfp发信服务器(新机器,root目录,包括安装PHP和开启)  31. 查看cfp-server状态 "
     echo "------------------------------------------------------------------------------------"
@@ -237,17 +271,21 @@ software() {
         ;;
     2)
         installroot
+        ./init.sh 1
 
         ;;
     3)
         installuseful
+        ./init.sh 1
         ;;
 
     4)
         xuiinstall
+        
         ;;
     5)
         removenginx
+        
         ;;
     6)
         removeapache
@@ -261,12 +299,18 @@ software() {
     9)
         removev2
         ;;
+
+    10)
+        removemysql
+        ;;
     30)
         cfpinstall
+        ./init.sh 1
         ;;
 
     31)
         cfpstatus
+        ./init.sh 1
 
         ;;
     32)
@@ -274,9 +318,11 @@ software() {
         ;;
     33)
         cfpstart
+        ./init.sh 1
         ;;
     34)
         cfpstop
+        ./init.sh 1
         ;;
 
     99)
@@ -304,7 +350,7 @@ ufwsafe() {
         sudo ufw default deny
         echo "已配置关闭所有外部对本机的访问"
         ufwstatus
-        ./init.sh 3
+        
 
     }
     ufwdel() {
@@ -328,7 +374,7 @@ ufwsafe() {
     ufwstatus() {
         ufw status
         echo "提示:inactive 关闭状态 , active 开启状态"
-        ./init.sh 3
+        
 
     }
 
@@ -342,7 +388,7 @@ ufwsafe() {
         sudo ufw delete allow $unport
         echo "端口 $unport 已关闭"
         ufwstatus
-        ./init.sh 3
+        
     }
 
     installfail2ban() {
@@ -413,29 +459,37 @@ EOM
         ;;
     1)
         ufwinstall
+        ./init.sh 3
 
         ;;
     2)
         ufwdel
+        ./init.sh 3
         ;;
 
     4)
         ufwstatus
+        ./init.sh 3
         ;;
     5)
         ufwadd
+        ./init.sh 3
         ;;
     6)
         ufwclose
+        ./init.sh 3
         ;;
     7)
         installfail2ban
+        ./init.sh 3
         ;;
     8)
         sudo fail2ban-client status sshd
+        ./init.sh 3
         ;;
     9)
         ssherror
+        ./init.sh 3
 
         ;;
 
@@ -899,6 +953,7 @@ EOM
         ;;
     3)
         netinfo
+        ./init.sh 2
         ;;
     4)
         netfast
@@ -1114,6 +1169,10 @@ dockermain() {
 
 }
 
+updateme(){
+    wget -N  http://wget.192168.work/init.sh && chmod +x init.sh && sudo ./init.sh
+}
+
 # main 程序开始---------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>># main 程序开始->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 number="$1"
 
@@ -1121,13 +1180,15 @@ if [[ "$number" = "" ]]; then
 
     echo " "
     echo "###################################################"
-    echo "#         自定义Ubuntu 初始化shell脚本    主页    #"
+    echo "#         Ubuntu 18.04+ shell脚本    主页    #"
     echo "###################################################"
     echo ""
 
     echo "1:software 软件     2:network 网络   3:ufw & safe 防火墙安全"
     echo "------------------------------------------------------------------------------------"
     echo "4:sys set 系统     5:docker 操作"
+    echo "------------------------------------------------------------------------------------"
+    echo "66:脚本升级 "
     echo "------------------------------------------------------------------------------------"
     echo "0: exit 退出"
     echo ""
@@ -1152,6 +1213,10 @@ case $number in
     ;;
 5)
     dockermain
+    ;;
+
+66)
+    updateme
     ;;
 *)
     echo '---------输入有误,脚本终止--------'
