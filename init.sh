@@ -681,29 +681,27 @@ EOM
 
     }
 
-    sshkey() {
+    sshgetpub() {
         echo "输完3次回车"
         read -p "请输入email: " email
         ssh-keygen -t ed25519 -C "$email"
         echo ""
-        echo "ssh公钥生成成功"
+        echo "ssh秘钥钥生成成功"
         echo ""
-        echo ""
+        echo "公钥："
         cat ~/.ssh/id_ed25519.pub
     }
 
-    sshpublogin() {
-        echo "客户端生成公钥命令---*如果存在就不要设置了"
-        echo "ssh-keygen -t rsa"
-        read -n1 -r -p "请按任意键继续..."
-
-        read -p "请将公钥粘贴至命令行: " clientpub
-
-        echo $clientpub >>~/.ssh/authorized_keys
-
-        echo "写入成功 可以尝试登录"
-
+    sshsetpub(){
+        echo "请填入ssh公钥"
+        read -p "请粘贴至命令行回车: " sshpub
+        echo -e  $sshpub >> /root/.ssh/authorized_keys
+        echo ""
+        echo "ssh公钥写入成功"
+        echo ""
     }
+
+   
 
     sysinfo() {
 
@@ -750,7 +748,7 @@ EOM
 
     echo "1:换源    2:同步时间      3:开启root远程登录      4:support Chinese 中文显示"
     echo "------------------------------------------------------------------------------------"
-    echo "5.本机生成ssh公钥    6.客户端使用ssh秘钥登录       "
+    echo "5.生成ssh公钥    6.写入ssh公钥       "
     echo "------------------------------------------------------------------------------------"
     echo "9:系统信息    10:磁盘信息    "
     echo "------------------------------------------------------------------------------------"
@@ -776,10 +774,10 @@ EOM
         supportcn
         ;;
     5)
-        sshkey
+        sshgetpub
         ;;
     6)
-        sshpublogin
+        sshsetpub
         ;;
 
     9)
@@ -1180,7 +1178,7 @@ if [[ "$number" = "" ]]; then
 
     echo " "
     echo "###################################################"
-    echo "#         Ubuntu 18.04+ shell脚本    主页    #"
+    echo "#         Ubuntu 18.04+ shell脚本    主页  v 2.1.1  #"
     echo "###################################################"
     echo ""
 
