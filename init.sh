@@ -654,6 +654,7 @@ EOM
             sleep 1
             echo "port 22" >>/etc/ssh/sshd_config
             echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
+            echo "PasswordAuthentication yes" >>/etc/ssh/sshd_config
             echo "重启服务中"
             service sshd restart
 
