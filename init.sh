@@ -586,6 +586,30 @@ EOM
             sleep 1
             aptupdatefun
         }
+
+a2204() {
+            echo "开始写入阿里云源Ubuntu 2004版本."
+            cat <<EOM >/etc/apt/sources.list
+deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse
+
+EOM
+            echo "source list已经写入阿里云源."
+
+            sleep 1
+            aptupdatefun
+        }
+
+
+
         sleep 1
         echo "开始备份原列表"
         sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
@@ -597,7 +621,7 @@ EOM
         sleep 1
         echo "选择你的Ubuntu版本（其他版本请手动换源)"
         sleep 1
-        echo "1:Ubuntu 16.04    2:Ubuntu 18.04(bionic)    3:Ubuntu 20.04(focal)"
+        echo "1:Ubuntu 16.04    2:Ubuntu 18.04(bionic)    3:Ubuntu 20.04(focal)  4:Ubuntu 22.04(jammy)"
         read -p "请输入命令数字: " sourcesnumber
         case $sourcesnumber in
         1)
@@ -608,6 +632,9 @@ EOM
             ;;
         3)
             a2004
+            ;;
+             4)
+            a2204
             ;;
         *)
             echo '---------输入有误,脚本终止--------'
