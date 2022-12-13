@@ -205,17 +205,29 @@ software() {
 
     cfpinstall() {
 
-        echo "开始克隆仓库"
-        git clone https://git.lidsen.cn:16116/root/vpscfptools.git
-        echo "完成克隆"
+
+        echo "确保cfp的仓库在root目录已克隆"
+
+        read -n1 -p "Do you want to continue [Y/N]? " answer
+        case $answer in
+        Y | y)
+            echo "开始请手动克隆仓库"
         installphp
         echo "php 检查完成"
         nohup php vpscfptools/server.php start >vpscfptools/logs/server.log 2>&1 &
         echo "server 尝试开始"
-
         sleep 2
         cfpstatus
+            ;;
 
+        N | n)
+            echo
+            echo "OK, goodbye"
+            exit
+            ;;
+        esac
+
+       
     }
 
     cfpstart() {
@@ -250,7 +262,7 @@ software() {
     echo "------------------------------------------------------------------------------------"
 
     echo "=======cfp发信========"
-    echo "30:一键安装、配置cfp发信服务器(新机器,root目录,包括安装PHP和开启)  31. 查看cfp-server状态 "
+    echo "30:一键配置cfp  31. 查看cfp-server状态 "
     echo "------------------------------------------------------------------------------------"
     echo "32:安装PHP及依赖    33: 开启cfpserver  34. 停止cfpserver   "
     echo "------------------------------------------------------------------------------------"
@@ -588,7 +600,7 @@ EOM
         }
 
 a2204() {
-            echo "开始写入阿里云源Ubuntu 2004版本."
+            echo "开始写入阿里云源Ubuntu 2204版本."
             cat <<EOM >/etc/apt/sources.list
 deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
 deb-src http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
@@ -697,6 +709,21 @@ EOM
 
     }
 
+    sshpubonly(){
+
+        echo "开始备份原文件sshd_config"
+            sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
+            echo "原文件sshd_config已备份."
+            sleep 1
+            echo "port 22" >>/etc/ssh/sshd_config
+            echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
+            echo "PasswordAuthentication no" >>/etc/ssh/sshd_config
+            echo "重启服务中"
+            service sshd restart
+
+            echo "ok"
+    }
+
     supportcn() {
         echo ""
         sudo apt-get install zhcon -y
@@ -726,6 +753,12 @@ EOM
         echo -e  $sshpub >> /root/.ssh/authorized_keys
         echo ""
         echo "ssh公钥写入成功"
+        echo ""
+    }
+
+    authorized(){
+        echo ""
+        cat /root/.ssh/authorized_keys
         echo ""
     }
 
@@ -776,7 +809,7 @@ EOM
 
     echo "1:换源    2:同步时间      3:开启root远程登录      4:support Chinese 中文显示"
     echo "------------------------------------------------------------------------------------"
-    echo "5.生成ssh公钥    6.写入ssh公钥       "
+    echo "5.生成ssh公钥    6.写入ssh公钥    7.只允许秘钥ssh登录  8.查看本机authorized_keys "
     echo "------------------------------------------------------------------------------------"
     echo "9:系统信息    10:磁盘信息    "
     echo "------------------------------------------------------------------------------------"
@@ -806,6 +839,14 @@ EOM
         ;;
     6)
         sshsetpub
+        ;;
+    7)
+        sshpubonly
+        ./init.sh 4
+        ;;
+    8)
+        authorized
+        ./init.sh 4
         ;;
 
     9)
