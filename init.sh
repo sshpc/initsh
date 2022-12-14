@@ -730,9 +730,9 @@ EOM
         sudo adduser $(whoami) video
 
         sleep 1
-        sudo zhcon -–utf8
+        sudo zhcon --utf8
         echo ""
-        echo "Please enter 'zhcon -–utf8' "
+        echo "Please enter 'zhcon --utf8' "
 
     }
 
@@ -858,8 +858,7 @@ EOM
         ./init.sh 4
         ;;
 
-    \
-        99)
+    99)
         ./init.sh
         ;;
     *)
