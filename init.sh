@@ -1,16 +1,35 @@
 #!/bin/bash
 # Ubuntu初始化脚本
-# Author:pinesss<https://gitee.com/pinesss>
+# Author:sshpc <https://gitee.com/sshpc>
 
-#定义全局变量
+#定义全局变量：
+
+#系统时间
 datevar=$(date)
+#脚本版本
+version='2.2.1'
+#菜单名称(默认主页)
+menuname='主页'
 
-#全局函数
+#定义全局函数:
+
+#apt更新
 aptupdatefun() {
     echo "检查更新"
     echo "------>>开始更新源列表"
     sudo apt-get update -y && apt-get install curl -y
     echo "已更改源列表。所有更新和升级都完成了!"
+}
+
+#菜单头部
+menutop() {
+    echo ""
+    echo ""
+    echo "~~~~~~~~~~~~~~~~~~ Ubuntu shell tools 脚本工具 ~~~~~~~~~~~~~~~~ 版本:v $version"
+    echo ""
+    echo "当前菜单: $menuname "
+    echo ""
+    echo ""
 }
 
 #  软件-----------------------###################################################################################### install tools 软件安装############################################-----------------------
@@ -205,19 +224,18 @@ software() {
 
     cfpinstall() {
 
-
         echo "确保cfp的仓库在root目录已克隆"
 
         read -n1 -p "Do you want to continue [Y/N]? " answer
         case $answer in
         Y | y)
             echo "开始请手动克隆仓库"
-        installphp
-        echo "php 检查完成"
-        nohup php vpscfptools/server.php start >vpscfptools/logs/server.log 2>&1 &
-        echo "server 尝试开始"
-        sleep 2
-        cfpstatus
+            installphp
+            echo "php 检查完成"
+            nohup php vpscfptools/server.php start >vpscfptools/logs/server.log 2>&1 &
+            echo "server 尝试开始"
+            sleep 2
+            cfpstatus
             ;;
 
         N | n)
@@ -227,7 +245,6 @@ software() {
             ;;
         esac
 
-       
     }
 
     cfpstart() {
@@ -243,13 +260,7 @@ software() {
         php /root/vpscfptools/server.php status
     }
 
-    echo " "
-    echo "#########################################################################################"
-
-    echo "#         自定义Ubuntu 初始化shell脚本    软件    #"
-
-    echo "#########################################################################################"
-    echo ""
+    menutop
 
     echo "=======安装========"
     echo "1:update apt （升级源)    2: 安装核心软件     3.安装常用软件    4. 安装x-ui              "
@@ -293,11 +304,11 @@ software() {
 
     4)
         xuiinstall
-        
+
         ;;
     5)
         removenginx
-        
+
         ;;
     6)
         removeapache
@@ -362,9 +373,9 @@ ufwsafe() {
         sudo ufw default deny
         echo "已配置关闭所有外部对本机的访问"
         ufwstatus
-        
 
     }
+
     ufwdel() {
         sudo ufw disable
         echo "ufw已关闭"
@@ -386,7 +397,6 @@ ufwsafe() {
     ufwstatus() {
         ufw status
         echo "提示:inactive 关闭状态 , active 开启状态"
-        
 
     }
 
@@ -400,7 +410,7 @@ ufwsafe() {
         sudo ufw delete allow $unport
         echo "端口 $unport 已关闭"
         ufwstatus
-        
+
     }
 
     installfail2ban() {
@@ -448,11 +458,7 @@ EOM
         sudo lastb | grep root | awk '{print $3}' | sort | uniq
     }
 
-    echo " "
-    echo "#########################################################################################"
-    echo "#         自定义Ubuntu 初始化shell脚本    ufwsafe     #"
-    echo "#########################################################################################"
-    echo ""
+    menutop
 
     echo "1:开启防火墙-ufw    2:关闭防火墙-ufw           "
     echo "------------------------------------------------------------------------------------"
@@ -502,11 +508,8 @@ EOM
     9)
         ssherror
         ./init.sh 3
-
         ;;
-
-    \
-        99)
+    99)
         ./init.sh
         ;;
     *)
@@ -599,7 +602,7 @@ EOM
             aptupdatefun
         }
 
-a2204() {
+        a2204() {
             echo "开始写入阿里云源Ubuntu 2204版本."
             cat <<EOM >/etc/apt/sources.list
 deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
@@ -620,8 +623,6 @@ EOM
             aptupdatefun
         }
 
-
-
         sleep 1
         echo "开始备份原列表"
         sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
@@ -631,7 +632,7 @@ EOM
         echo "检测你的系统版本为:"
         lsb_release -a
         sleep 1
-        echo "选择你的Ubuntu版本（其他版本请手动换源)"
+        echo "选择你的Ubuntu版本(其他版本请手动换源)"
         sleep 1
         echo "1:Ubuntu 16.04    2:Ubuntu 18.04(bionic)    3:Ubuntu 20.04(focal)  4:Ubuntu 22.04(jammy)"
         read -p "请输入命令数字: " sourcesnumber
@@ -645,7 +646,7 @@ EOM
         3)
             a2004
             ;;
-             4)
+        4)
             a2204
             ;;
         *)
@@ -709,19 +710,19 @@ EOM
 
     }
 
-    sshpubonly(){
+    sshpubonly() {
 
         echo "开始备份原文件sshd_config"
-            sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
-            echo "原文件sshd_config已备份."
-            sleep 1
-            echo "port 22" >>/etc/ssh/sshd_config
-            echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
-            echo "PasswordAuthentication no" >>/etc/ssh/sshd_config
-            echo "重启服务中"
-            service sshd restart
+        sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
+        echo "原文件sshd_config已备份."
+        sleep 1
+        echo "port 22" >>/etc/ssh/sshd_config
+        echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
+        echo "PasswordAuthentication no" >>/etc/ssh/sshd_config
+        echo "重启服务中"
+        service sshd restart
 
-            echo "ok"
+        echo "ok"
     }
 
     supportcn() {
@@ -747,22 +748,20 @@ EOM
         cat ~/.ssh/id_ed25519.pub
     }
 
-    sshsetpub(){
+    sshsetpub() {
         echo "请填入ssh公钥"
         read -p "请粘贴至命令行回车: " sshpub
-        echo -e  $sshpub >> /root/.ssh/authorized_keys
+        echo -e $sshpub >>/root/.ssh/authorized_keys
         echo ""
         echo "ssh公钥写入成功"
         echo ""
     }
 
-    authorized(){
+    authorized() {
         echo ""
         cat /root/.ssh/authorized_keys
         echo ""
     }
-
-   
 
     sysinfo() {
 
@@ -799,17 +798,11 @@ EOM
 
     }
 
-    echo " "
-    echo "#########################################################################################"
+    menutop
 
-    echo "#         自定义Ubuntu 初始化shell脚本    系统     #"
-
-    echo "#########################################################################################"
-    echo ""
-
-    echo "1:换源    2:同步时间      3:开启root远程登录      4:support Chinese 中文显示"
+    echo "1:换源    2:同步时间      3:开启密码、秘钥、root远程登录      4:support Chinese 中文显示"
     echo "------------------------------------------------------------------------------------"
-    echo "5.生成ssh公钥    6.写入ssh公钥    7.只允许秘钥ssh登录  8.查看本机authorized_keys "
+    echo "5.生成ssh公钥    6.写入ssh公钥    7.查看本机authorized_keys  8. 只允许秘钥登录"
     echo "------------------------------------------------------------------------------------"
     echo "9:系统信息    10:磁盘信息    "
     echo "------------------------------------------------------------------------------------"
@@ -841,11 +834,12 @@ EOM
         sshsetpub
         ;;
     7)
-        sshpubonly
+        authorized
         ./init.sh 4
         ;;
     8)
-        authorized
+        
+        sshpubonly
         ./init.sh 4
         ;;
 
@@ -991,13 +985,7 @@ EOM
         echo ""
     }
 
-    echo " "
-    echo "#########################################################################################"
-
-    echo "#         自定义Ubuntu 初始化shell脚本   网络 #"
-
-    echo "#########################################################################################"
-    echo ""
+    menutop
 
     echo "1:配置静态ip(vps禁用)    2:启用dhcp动态获取 (vps禁用)   3:网络信息    4.网络测速（外网)   "
     echo "------------------------------------------------------------------------------------"
@@ -1025,8 +1013,7 @@ EOM
         netfast
         ;;
 
-    \
-        99)
+    99)
         ./init.sh
         ;;
     *)
@@ -1160,9 +1147,7 @@ dockermain() {
         dockerpsa
     }
 
-    echo " "
-    echo "# ######################docker操作######################"
-    echo ""
+    menutop
 
     echo "1:安装docker       2:查看docker镜像     3:查看正在运行的容器       4: 查看所有的容器"
     echo "------------------------------------------------------------------------------------"
@@ -1235,8 +1220,8 @@ dockermain() {
 
 }
 
-updateme(){
-    wget -N  http://wget.192168.work/init.sh && chmod +x init.sh && sudo ./init.sh
+updateme() {
+    wget -N http://wget.192168.work/init.sh && chmod +x init.sh && sudo ./init.sh
 }
 
 # main 程序开始---------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>># main 程序开始->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1244,11 +1229,7 @@ number="$1"
 
 if [[ "$number" = "" ]]; then
 
-    echo " "
-    echo "###################################################"
-    echo "#         Ubuntu 18.04+ shell脚本    主页  v 2.1.1  #"
-    echo "###################################################"
-    echo ""
+    menutop
 
     echo "1:software 软件     2:network 网络   3:ufw & safe 防火墙安全"
     echo "------------------------------------------------------------------------------------"
@@ -1266,18 +1247,23 @@ case $number in
 0) #退出#
     ;;
 1)
+    menuname='软件'
     software
     ;;
 2)
+    menuname='网络'
     networktools
     ;;
 3)
+    menuname='防火墙安全'
     ufwsafe
     ;;
 4)
+    menuname='系统'
     sysset
     ;;
 5)
+    menuname='docker'
     dockermain
     ;;
 
