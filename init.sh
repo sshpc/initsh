@@ -7,7 +7,7 @@
 #系统时间
 datevar=$(date)
 #脚本版本
-version='2.2.1'
+version='2.2.3'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -32,10 +32,19 @@ menutop() {
     echo ""
 }
 
+#error函数
+inputerror(){
+
+echo '---------输入有误,脚本终止--------'
+
+
+}
+
+
 #  软件-----------------------###################################################################################### install tools 软件安装############################################-----------------------
 software() {
 
-    installroot() {
+    installbase() {
         apt-get update -y && apt-get install curl -y
 
         apt install net-tools -y
@@ -263,7 +272,7 @@ software() {
     menutop
 
     echo "=======安装========"
-    echo "1:update apt （升级源)    2: 安装核心软件     3.安装常用软件    4. 安装x-ui              "
+    echo "1:update apt  (升级源)    2: 安装核心软件     3.安装常用软件    4. 安装x-ui              "
     echo "------------------------------------------------------------------------------------"
 
     echo "=======环境彻底卸载========"
@@ -293,7 +302,7 @@ software() {
 
         ;;
     2)
-        installroot
+        installbase
         ./init.sh 1
 
         ;;
@@ -352,7 +361,7 @@ software() {
         ./init.sh
         ;;
     *)
-        echo '---------输入有误,脚本终止--------'
+        inputerror
 
         ;;
     esac
@@ -384,10 +393,10 @@ ufwsafe() {
     }
     ufwadd() {
 
-        read -p "请输入端口号（0-65535): " port
+        read -p "请输入端口号 (0-65535): " port
         until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
             echo "$port: 无效端口."
-            read -p "请输入端口号（0-65535): " port
+            read -p "请输入端口号 (0-65535): " port
         done
         sudo ufw allow $port
         echo "端口 $port 已放行"
@@ -402,10 +411,10 @@ ufwsafe() {
 
     ufwclose() {
 
-        read -p "请输入端口号（0-65535): " unport
+        read -p "请输入端口号 (0-65535): " unport
         until [[ -z "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
             echo "$unport: 无效端口."
-            read -p "请输入端口号（0-65535): " unport
+            read -p "请输入端口号 (0-65535): " unport
         done
         sudo ufw delete allow $unport
         echo "端口 $unport 已关闭"
@@ -422,8 +431,8 @@ ufwsafe() {
 
         read -n1 -r -p "请按任意键继续..."
 
-        read -p "请输入尝试次数（直接回车默认4次): " retry
-        read -p "请输入拦截后禁止访问的时间（直接回车默认604800s): " timeban
+        read -p "请输入尝试次数 (直接回车默认4次): " retry
+        read -p "请输入拦截后禁止访问的时间 (直接回车默认604800s): " timeban
 
         if [[ "$retry" = "" ]]; then
             retry=4
@@ -513,7 +522,7 @@ EOM
         ./init.sh
         ;;
     *)
-        echo '---------输入有误,脚本终止--------'
+        inputerror
 
         ;;
     esac
@@ -650,14 +659,14 @@ EOM
             a2204
             ;;
         *)
-            echo '---------输入有误,脚本终止--------'
+            inputerror
             exit
             ;;
         esac
 
     }
 
-    timeok() {
+    synchronization_time() {
         echo "同步前的时间: $(date -R)"
         echo "-----》即将同步为上海时间"
         read -n1 -r -p "请按任意键继续..."
@@ -819,7 +828,7 @@ EOM
         huanyuanfun
         ;;
     2)
-        timeok
+        synchronization_time
         ;;
     3)
         openroot
@@ -856,7 +865,7 @@ EOM
         ./init.sh
         ;;
     *)
-        echo '---------输入有误,脚本终止--------'
+        inputerror
 
         ;;
     esac
@@ -867,11 +876,11 @@ EOM
 networktools() {
 
     staticip() {
-        echo "确保原文件手工备份至别的目录,避免重复执行脚本无法找回"
+        echo "确保原文件手工备份"
         read -n1 -r -p "请按任意键继续..."
         echo "确保网卡名称ens33 还是其他"
         ifconfig
-        read -p "请输入网卡名称（例:ens33 回车默认ens33): " ens
+        read -p "请输入网卡名称 (例:ens33 回车默认ens33): " ens
 
         if [[ "$ens" = "" ]]; then
             ens="ens33"
@@ -886,11 +895,11 @@ networktools() {
         echo "开始配置静态ip"
 
         ipaddresses="errorip"
-        read -p "请输入ip地址+网络号（x.x.x.x/x): " ipaddresses
+        read -p "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
 
         until [[ "$ipaddresses" ]]; do
             echo "$ipaddresses: 网络地址不能为空."
-            read -p "请输入ip地址+网络号（x.x.x.x/x): " ipaddresses
+            read -p "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
 
         done
 
@@ -936,7 +945,7 @@ EOM
         echo "开始配置DHCP"
         echo "确保网卡名称ens33 还是其他"
         ifconfig
-        read -p "请输入网卡名称（例:ens33 回车默认ens33): " ens
+        read -p "请输入网卡名称 (例:ens33 回车默认ens33): " ens
 
         if [[ "$ens" = "" ]]; then
             ens="ens33"
@@ -987,7 +996,7 @@ EOM
 
     menutop
 
-    echo "1:配置静态ip(vps禁用)    2:启用dhcp动态获取 (vps禁用)   3:网络信息    4.网络测速（外网)   "
+    echo "1:配置静态ip(vps禁用)    2:启用dhcp动态获取 (vps禁用)   3:网络信息    4.网络测速 (外网)   "
     echo "------------------------------------------------------------------------------------"
 
     echo "99: 返回主页"
@@ -1017,7 +1026,7 @@ EOM
         ./init.sh
         ;;
     *)
-        echo '---------输入有误,脚本终止--------'
+        inputerror
 
         ;;
     esac
@@ -1213,14 +1222,14 @@ dockermain() {
         ./init.sh
         ;;
     *)
-        echo '---------输入有误,脚本终止--------'
+        inputerror
 
         ;;
     esac
 
 }
 
-updateme() {
+upgradeself() {
     wget -N http://wget.192168.work/init.sh && chmod +x init.sh && sudo ./init.sh
 }
 
@@ -1268,10 +1277,10 @@ case $number in
     ;;
 
 66)
-    updateme
+    upgradeself
     ;;
 *)
-    echo '---------输入有误,脚本终止--------'
+    inputerror
 
     ;;
 esac
