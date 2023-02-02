@@ -7,7 +7,7 @@
 #系统时间
 datevar=$(date)
 #脚本版本
-version='2.2.4'
+version='2.2.4.1'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -1239,7 +1239,7 @@ dockermain() {
 }
 
 upgradeself() {
-    wget -N http://sshpc.github.io/initsh/init.sh && chmod +x init.sh && sudo ./init.sh
+    wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && sudo ./init.sh
 }
 
 
