@@ -7,7 +7,7 @@
 #系统时间
 datevar=$(date)
 #脚本版本
-version='2.2.4.1'
+version='2.2.5'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -774,16 +774,35 @@ EOM
 
     sysinfo() {
 
-        echo "-----------系统版本------------"
+        echo "-----------系统版本----------------------------"
         lsb_release -a
         echo ""
-        echo "---------当前登录用户-------登录时间-----"
+        echo "-------------Linux内核版本---------------------"
+
+        uname -r
+        echo ""
+        echo "----------cpu型号-------------------------------"
+cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c
+echo "----------cpu核心数----"
+cat /proc/cpuinfo | grep "cpu cores" | uniq
+echo "----------cpu运行模式:" $(getconf LONG_BIT) '位----------'
+
+
+echo ""
+        echo "---------当前登录用户-------登录时间------------------"
         who am i
         echo ""
         echo "-------------系统运行时间----当前登录用户数------系统负载----"
 
         uptime
         echo ""
+         
+        echo "-------------tcp拥塞控制算法----"
+
+        sysctl net.ipv4.tcp_congestion_control
+        echo ""
+
+
 
     }
 
@@ -860,7 +879,7 @@ EOM
 
     9)
         sysinfo
-        ./init.sh 4
+        
         ;;
     10)
         diskinfo
