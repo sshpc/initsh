@@ -1,13 +1,13 @@
 #!/bin/bash
 # Ubuntu初始化脚本
 # Author:SSHPC <https://github.com/sshpc>
-
+export LANG=en_US.UTF-8
 #定义全局变量：
 
 #系统时间
 datevar=$(date)
 #脚本版本
-version='2.2.5'
+version='2.3.0'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -33,13 +33,11 @@ menutop() {
 }
 
 #error函数
-inputerror(){
+inputerror() {
 
-echo '---------输入有误,脚本终止--------'
-
+    echo '---------输入有误,脚本终止--------'
 
 }
-
 
 #  软件-----------------------###################################################################################### install tools 软件安装############################################-----------------------
 software() {
@@ -270,23 +268,26 @@ software() {
     }
 
     menutop
-
-    echo "=======安装========"
+  
+    echo "<安装>"
+    echo ""
     echo "1:update apt  (升级源)    2: 安装核心软件     3.安装常用软件    4. 安装x-ui              "
     echo "------------------------------------------------------------------------------------"
-
-    echo "=======环境彻底卸载========"
+    echo ""
+    echo "<卸载>"
+    echo ""
     echo "5:卸载nginx    6: 卸载Apache     7. 卸载php    8. 卸载docker    9:卸载v2ray         "
     echo "------------------------------------------------------------------------------------"
     echo "10:卸载mysql             "
     echo "------------------------------------------------------------------------------------"
-
-    echo "=======cfp发信========"
+    echo ""
+    echo "<cfp>"
+    echo ""
     echo "30:一键配置cfp  31. 查看cfp-server状态 "
     echo "------------------------------------------------------------------------------------"
     echo "32:安装PHP及依赖    33: 开启cfpserver  34. 停止cfpserver   "
     echo "------------------------------------------------------------------------------------"
-
+echo ""
     echo "99: 返回主页"
 
     echo "0:退出"
@@ -774,35 +775,56 @@ EOM
 
     sysinfo() {
 
-        echo "-----------系统版本----------------------------"
-        lsb_release -a
+        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>系统基本信息<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        hostname=$(uname -n)
+        system=$(cat /etc/os-release | grep "^NAME" | awk -F\" '{print $2}')
+        version=$(lsb_release -s -d)
+        codename=$(lsb_release -s -c)
+
+        kernel=$(uname -r)
+        platform=$(uname -p)
+        address=$(ip addr | grep inet | grep -v "inet6" | grep -v "127.0.0.1" | awk '{ print $2; }' | tr '\n' '\t')
+        cpumodel=$(cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq)
+        cpu=$(cat /proc/cpuinfo | grep 'processor' | sort | uniq | wc -l)
+        machinemodel=$(dmidecode | grep "Product Name" | sed 's/^[ \t]*//g' | tr '\n' '\t')
+        date=$(date)
+        tcpalgorithm=$(sysctl net.ipv4.tcp_congestion_control)
+
+        echo "主机名:           $hostname"
+        echo "系统名称:         $system"
+        echo "系统版本:         $version $codename"
+
+        echo "内核版本:         $kernel"
+        echo "系统类型:         $platform"
+        echo "本机IP地址:       $address"
+        echo "CPU型号:          $cpumodel"
+        echo "CPU核数:          $cpu"
+        echo "机器型号:         $machinemodel"
+        echo "系统时间:         $date"
+        echo "tcp拥塞控制算法:         $tcpalgorithm"
+        echo " "
+        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>资源使用情况<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        summemory=$(free -h | grep "Mem:" | awk '{print $2}')
+        freememory=$(free -h | grep "Mem:" | awk '{print $4}')
+        usagememory=$(free -h | grep "Mem:" | awk '{print $3}')
+        uptime=$(uptime | awk '{print $2" "$3" "$4" "$5}' | sed 's/,$//g')
+        loadavg=$(uptime | awk '{print $9" "$10" "$11" "$12" "$13}')
+
+        echo "总内存大小:           $summemory"
+        echo "已使用内存大小:       $usagememory"
+        echo "可使用内存大小:       $freememory"
+        echo "系统运行时间:         $uptime"
+        echo "系统负载:             $loadavg"
+
+        echo " "
+        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>安全审计<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        echo "正常情况下登录到本机30天内的所有用户的历史记录:"
+        last | head -n 30
+
         echo ""
-        echo "-------------Linux内核版本---------------------"
-
-        uname -r
+        echo "系统中关键文件修改时间:"
+        ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
         echo ""
-        echo "----------cpu型号-------------------------------"
-cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c
-echo "----------cpu核心数----"
-cat /proc/cpuinfo | grep "cpu cores" | uniq
-echo "----------cpu运行模式:" $(getconf LONG_BIT) '位----------'
-
-
-echo ""
-        echo "---------当前登录用户-------登录时间------------------"
-        who am i
-        echo ""
-        echo "-------------系统运行时间----当前登录用户数------系统负载----"
-
-        uptime
-        echo ""
-         
-        echo "-------------tcp拥塞控制算法----"
-
-        sysctl net.ipv4.tcp_congestion_control
-        echo ""
-
-
 
     }
 
@@ -824,12 +846,21 @@ echo ""
         echo "lsblk"
         echo -e "ubuntu general \n # resize2fs -p -F /dev/mapper/ubuntu--vg-ubuntu--lv"
 
+        echo "文件系统信息:"
+        more /etc/fstab | grep -v "^#" | grep -v "^$"
+        echo " "
+
     }
 
-    crontabinfo(){
+    crontabinfo() {
 
         crontab -e
-        service cron  reload
+        service cron reload
+    }
+
+    startservicels() {
+
+        systemctl list-unit-files | grep enabled
     }
 
     menutop
@@ -838,7 +869,7 @@ echo ""
     echo "------------------------------------------------------------------------------------"
     echo "5.生成ssh公钥    6.写入ssh公钥    7.查看本机authorized_keys  8. 只允许秘钥登录"
     echo "------------------------------------------------------------------------------------"
-    echo "9:系统信息    10:磁盘信息   11:计划任务crontab "
+    echo "9:系统信息    10:磁盘信息   11:计划任务crontab  12:开机启动的服务"
     echo "------------------------------------------------------------------------------------"
     echo "99: 返回主页"
 
@@ -872,22 +903,27 @@ echo ""
         ./init.sh 4
         ;;
     8)
-        
+
         sshpubonly
         ./init.sh 4
         ;;
 
     9)
         sysinfo
-        
+
         ;;
     10)
         diskinfo
         ./init.sh 4
         ;;
-11)
+    11)
         crontabinfo
         ./init.sh 4
+        ;;
+
+    12)
+        startservicels
+
         ;;
     99)
         ./init.sh
@@ -1022,9 +1058,20 @@ EOM
         echo ""
     }
 
+    routels() {
+        route -n
+    }
+
+    netstatls() {
+
+        netstat -tunlp
+    }
+
     menutop
 
     echo "1:配置静态ip(vps禁用)    2:启用dhcp动态获取 (vps禁用)   3:网络信息    4.网络测速 (外网)   "
+    echo "------------------------------------------------------------------------------------"
+    echo "5:路由表                 6:查看监听端口                   "
     echo "------------------------------------------------------------------------------------"
 
     echo "99: 返回主页"
@@ -1048,6 +1095,16 @@ EOM
         ;;
     4)
         netfast
+        ;;
+
+    5)
+        routels
+        ./init.sh 2
+        ;;
+
+    6)
+        netstatls
+        ./init.sh 2
         ;;
 
     99)
@@ -1258,9 +1315,8 @@ dockermain() {
 }
 
 upgradeself() {
-    wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && sudo ./init.sh
+    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && sudo ./init.sh
 }
-
 
 # main 程序开始---------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>># main 程序开始->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 number="$1"
@@ -1285,23 +1341,23 @@ case $number in
 0) #退出#
     ;;
 1)
-    menuname='软件'
+    menuname='主页/软件'
     software
     ;;
 2)
-    menuname='网络'
+    menuname='主页/网络'
     networktools
     ;;
 3)
-    menuname='防火墙安全'
+    menuname='主页/防火墙安全'
     ufwsafe
     ;;
 4)
-    menuname='系统'
+    menuname='主页/系统'
     sysset
     ;;
 5)
-    menuname='docker'
+    menuname='主页/docker'
     dockermain
     ;;
 

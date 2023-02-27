@@ -1,6 +1,6 @@
-# 一个简单的 Ubuntu 工具脚本
+# 一个简单的 Ubuntu 初始化&工具脚本
 
-* * *
+---
 
 # 介绍
 
@@ -15,15 +15,14 @@
 * 便捷生成ssh秘钥对，及便捷导入
 * crontab 计划任务
 
-
-
-
-### 一键脚本使用
+### 一键脚本运行
 
 ```
 wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && sudo ./init.sh
 ```
+
 ###### 再次运行
+
 ```
 ./init.sh
 ```
