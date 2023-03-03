@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ubuntu初始化脚本
+# Ubuntu初始化&工具脚本
 # Author:SSHPC <https://github.com/sshpc>
 export LANG=en_US.UTF-8
 #定义全局变量：
@@ -7,7 +7,7 @@ export LANG=en_US.UTF-8
 #系统时间
 datevar=$(date)
 #脚本版本
-version='2.3.0'
+version='2.3.1.0'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -35,8 +35,35 @@ menutop() {
 #error函数
 inputerror() {
 
-    echo '---------输入有误,脚本终止--------'
+    echo '>---------输入有误,脚本终止--------<'
 
+}
+
+#分割线
+next() {
+    printf "%-70s\n" "-" | sed 's/\s/-/g'
+}
+
+#io测试公共函数
+io_test() {
+    (LANG=C dd if=/dev/zero of=benchtest_$$ bs=512k count=$1 conv=fdatasync && rm -f benchtest_$$ ) 2>&1 | awk -F, '{io=$NF} END { print io}' | sed 's/^[ \t]*//;s/[ \t]*$//'
+}
+
+#终端字体颜色定义
+_red() {
+    printf '\033[0;31;31m%b\033[0m' "$1"
+}
+
+_green() {
+    printf '\033[0;31;32m%b\033[0m' "$1"
+}
+
+_yellow() {
+    printf '\033[0;31;33m%b\033[0m' "$1"
+}
+
+_blue() {
+    printf '\033[0;31;36m%b\033[0m' "$1"
 }
 
 #  软件-----------------------###################################################################################### install tools 软件安装############################################-----------------------
@@ -270,23 +297,23 @@ software() {
     menutop
   
     echo "<安装>"
-    echo ""
+    
     echo "1:update apt  (升级源)    2: 安装核心软件     3.安装常用软件    4. 安装x-ui              "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo ""
     echo "<卸载>"
-    echo ""
+    
     echo "5:卸载nginx    6: 卸载Apache     7. 卸载php    8. 卸载docker    9:卸载v2ray         "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "10:卸载mysql             "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo ""
     echo "<cfp>"
-    echo ""
+    
     echo "30:一键配置cfp  31. 查看cfp-server状态 "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "32:安装PHP及依赖    33: 开启cfpserver  34. 停止cfpserver   "
-    echo "------------------------------------------------------------------------------------"
+    next
 echo ""
     echo "99: 返回主页"
 
@@ -471,11 +498,11 @@ EOM
     menutop
 
     echo "1:开启防火墙-ufw    2:关闭防火墙-ufw           "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "4:查看防火墙-ufw状态   5: 添加-ufw允许端口      6:关闭-ufw端口     "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "7:检查并安装配置fail2ban  8: fail2ban状态      9:查看是否有ssh爆破记录     "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "99: 返回主页"
 
     echo "0:退出"
@@ -781,6 +808,10 @@ EOM
         version=$(lsb_release -s -d)
         codename=$(lsb_release -s -c)
 
+        ccache=$( awk -F: '/cache size/ {cache=$2} END {print cache}' /proc/cpuinfo | sed 's/^[ \t]*//;s/[ \t]*$//' )
+        cpu_aes=$( grep -i 'aes' /proc/cpuinfo )
+    
+
         kernel=$(uname -r)
         platform=$(uname -p)
         address=$(ip addr | grep inet | grep -v "inet6" | grep -v "127.0.0.1" | awk '{ print $2; }' | tr '\n' '\t')
@@ -788,21 +819,29 @@ EOM
         cpu=$(cat /proc/cpuinfo | grep 'processor' | sort | uniq | wc -l)
         machinemodel=$(dmidecode | grep "Product Name" | sed 's/^[ \t]*//g' | tr '\n' '\t')
         date=$(date)
-        tcpalgorithm=$(sysctl net.ipv4.tcp_congestion_control)
+        tcpalgorithm=$(sysctl net.ipv4.tcp_congestion_control | awk -F ' ' '{print $3}')
 
         echo "主机名:           $hostname"
         echo "系统名称:         $system"
         echo "系统版本:         $version $codename"
+        
 
         echo "内核版本:         $kernel"
         echo "系统类型:         $platform"
-        echo "本机IP地址:       $address"
+        
         echo "CPU型号:          $cpumodel"
         echo "CPU核数:          $cpu"
+        echo "CPU缓存:          $ccache"
+
+        if [ -n "$cpu_aes" ]; then
+        echo "AES加密指令集支持: yes"
+        fi
+        
         echo "机器型号:         $machinemodel"
         echo "系统时间:         $date"
-        echo "tcp拥塞控制算法:         $tcpalgorithm"
-        echo " "
+        echo "本机IP地址:       $address"
+        echo "tcp拥塞控制算法:   $tcpalgorithm"
+        
         echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>资源使用情况<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         summemory=$(free -h | grep "Mem:" | awk '{print $2}')
         freememory=$(free -h | grep "Mem:" | awk '{print $4}')
@@ -814,19 +853,23 @@ EOM
         echo "已使用内存大小:       $usagememory"
         echo "可使用内存大小:       $freememory"
         echo "系统运行时间:         $uptime"
-        echo "系统负载:             $loadavg"
+        echo "系统负载:            $loadavg"
 
-        echo " "
+        
         echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>安全审计<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         echo "正常情况下登录到本机30天内的所有用户的历史记录:"
         last | head -n 30
 
-        echo ""
+        
         echo "系统中关键文件修改时间:"
         ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
         echo ""
+        sleep 1
+
+        echo "正在进行硬盘测速..."
 
     }
+
 
     diskinfo() {
 
@@ -852,6 +895,33 @@ EOM
 
     }
 
+    print_io_test() {
+    freespace=$( df -m . | awk 'NR==2 {print $4}' )
+    if [ -z "${freespace}" ]; then
+        freespace=$( df -m . | awk 'NR==3 {print $3}' )
+    fi
+    if [ ${freespace} -gt 1024 ]; then
+        writemb=2048
+        io1=$( io_test ${writemb} )
+        echo " I/O Speed(1st run) : $(_yellow "$io1")"
+        io2=$( io_test ${writemb} )
+        echo " I/O Speed(2nd run) : $(_yellow "$io2")"
+        io3=$( io_test ${writemb} )
+        echo " I/O Speed(3rd run) : $(_yellow "$io3")"
+        ioraw1=$( echo $io1 | awk 'NR==1 {print $1}' )
+        [ "`echo $io1 | awk 'NR==1 {print $2}'`" == "GB/s" ] && ioraw1=$( awk 'BEGIN{print '$ioraw1' * 1024}' )
+        ioraw2=$( echo $io2 | awk 'NR==1 {print $1}' )
+        [ "`echo $io2 | awk 'NR==1 {print $2}'`" == "GB/s" ] && ioraw2=$( awk 'BEGIN{print '$ioraw2' * 1024}' )
+        ioraw3=$( echo $io3 | awk 'NR==1 {print $1}' )
+        [ "`echo $io3 | awk 'NR==1 {print $2}'`" == "GB/s" ] && ioraw3=$( awk 'BEGIN{print '$ioraw3' * 1024}' )
+        ioall=$( awk 'BEGIN{print '$ioraw1' + '$ioraw2' + '$ioraw3'}' )
+        ioavg=$( awk 'BEGIN{printf "%.1f", '$ioall' / 3}' )
+        echo " I/O Speed(average) : $(_yellow "$ioavg MB/s")"
+    else
+        echo " $(_red "Not enough space for I/O Speed test!")"
+    fi
+}
+
     crontabinfo() {
 
         crontab -e
@@ -866,11 +936,11 @@ EOM
     menutop
 
     echo "1:换源    2:同步时间      3:开启密码、秘钥、root远程登录      4:support Chinese 中文显示"
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "5.生成ssh公钥    6.写入ssh公钥    7.查看本机authorized_keys  8. 只允许秘钥登录"
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "9:系统信息    10:磁盘信息   11:计划任务crontab  12:开机启动的服务"
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "99: 返回主页"
 
     echo "0:退出"
@@ -910,6 +980,7 @@ EOM
 
     9)
         sysinfo
+        print_io_test
 
         ;;
     10)
@@ -1070,9 +1141,9 @@ EOM
     menutop
 
     echo "1:配置静态ip(vps禁用)    2:启用dhcp动态获取 (vps禁用)   3:网络信息    4.网络测速 (外网)   "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "5:路由表                 6:查看监听端口                   "
-    echo "------------------------------------------------------------------------------------"
+    next
 
     echo "99: 返回主页"
 
@@ -1244,11 +1315,11 @@ dockermain() {
     menutop
 
     echo "1:安装docker       2:查看docker镜像     3:查看正在运行的容器       4: 查看所有的容器"
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "5:后台运行一个容器       6:运行一个终端交互容器             8: 进入交互式容器"
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "9:开启一个容器         10:停止一个容器         11:删除一个容器         "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "99: 返回主页"
 
     echo "0:退出"
@@ -1326,11 +1397,11 @@ if [[ "$number" = "" ]]; then
     menutop
 
     echo "1:software 软件     2:network 网络   3:ufw & safe 防火墙安全"
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "4:sys set 系统     5:docker 操作"
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "66:脚本升级 "
-    echo "------------------------------------------------------------------------------------"
+    next
     echo "0: exit 退出"
     echo ""
 
