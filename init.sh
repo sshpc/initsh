@@ -3,58 +3,14 @@
 # Author:SSHPC <https://github.com/sshpc>
 export LANG=en_US.UTF-8
 #定义全局变量：
-
 datevar=$(date)
-#版本
-version='23.3.8'
+version='23.4.17'
 #菜单名称(默认主页)
 menuname='主页'
-
-#全局函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #分割线
 next() {
     printf "%-70s\n" "-" | sed 's/\s/-/g'
-}
-
-waitinput(){
-read -n1 -r -p "按任意键继续..."
-}
-
-
-#apt更新
-aptupdatefun() {
-    echo "检查更新"
-    echo "------>>开始更新源列表"
-    sudo apt-get update -y && apt-get install curl -y
-    echo "已更改源列表。所有更新和升级都完成了!"
-}
-
-#菜单头部
-menutop() {
-    echo ""
-    echo "~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~ 版本:v $version"
-    echo ""
-    echo "当前菜单: $menuname "
-    echo ""
-    next
-}
-
-#二级菜单底部
-menubottom() {
-    next
-    echo "0: 退出    99: 返回主页"
-    echo ""
-    
-    read -p "请输入命令数字: " number
-}
-
-inputerror() {
-    echo '>---------输入有误,脚本终止--------<'
-}
-
-io_test() {
-    (LANG=C dd if=/dev/zero of=benchtest_$$ bs=512k count=$1 conv=fdatasync && rm -f benchtest_$$) 2>&1 | awk -F, '{io=$NF} END { print io}' | sed 's/^[ \t]*//;s/[ \t]*$//'
 }
 
 #终端字体颜色定义
@@ -74,31 +30,79 @@ _blue() {
     printf '\033[0;31;36m%b\033[0m' "$1"
 }
 
-
-
-installbase() {
-    apt-get update -y && apt-get install curl -y
-    apt install net-tools -y
-    echo "net-tools 已安装"
-    apt install vim -y
-    apt install openssh-server -y
-    echo "vim 和 ssh 已安装"
+waitinput() {
+    read -n1 -r -p "按任意键继续..."
 }
 
-installuseful() {
+#apt更新
+aptupdatefun() {
+    echo "检查更新"
+    apt-get update -y && apt-get install curl -y
+    echo "更新完成"
+}
+
+#菜单头部
+menutop() {
+
+    echo ""
+    _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v$version"
+    echo ""
+    echo ""
+    _yellow "当前菜单: $menuname "
+    echo ""
+    echo ""
+    next
+}
+
+#二级菜单底部
+menubottom() {
+    next
+    echo "0: 退出    99: 返回主页"
+    echo ""
+
+    read -p "请输入命令数字: " number
+}
+
+inputerror() {
+    echo '>---------输入有误,脚本终止--------<'
+}
+
+io_test() {
+    (LANG=C dd if=/dev/zero of=benchtest_$$ bs=512k count=$1 conv=fdatasync && rm -f benchtest_$$) 2>&1 | awk -F, '{io=$NF} END { print io}' | sed 's/^[ \t]*//;s/[ \t]*$//'
+}
+
+installbase() {
 
     aptupdatefun
-    apt install screen -y
-    echo "screen 已安装"
-    apt install git -y
-    echo "git 已安装"
-    apt install nmap -y
-    echo "nmap 已安装"
-    apt install iperf -y
-    echo "iperf已安装"
-    apt install zip -y
-    echo "zip 已安装"
+    echo "开始异步安装.."
 
+    install_package() {
+        package_name=$1
+        echo "开始安装 $package_name"
+        apt install $package_name -y
+
+        echo "$package_name 安装完成"
+    }
+
+    packages=(
+        "curl"
+        "net-tools"
+        "vim"
+        "openssh-server"
+        "screen"
+        "git"
+        "nmap"
+        "iperf"
+        "zip"
+    )
+
+    for package in "${packages[@]}"; do
+        package_name="${package%:*}"
+        install_package "$package_name" &
+    done
+
+    wait
+    echo "所有包都已安装完成"
 }
 
 installphp() {
@@ -188,11 +192,11 @@ removedocker() {
     systemctl stop docker
     service docker stop
 
-    sudo apt-get autoremove docker docker-ce docker-engine docker.io containerd runc
+    apt-get autoremove docker docker-ce docker-engine docker.io containerd runc
     dpkg -l | grep docker
-    sudo apt-get autoremove docker-ce-*
-    sudo rm -rf /etc/systemd/system/docker.service.d
-    sudo rm -rf /var/lib/docker
+    apt-get autoremove docker-ce-*
+    rm -rf /etc/systemd/system/docker.service.d
+    rm -rf /var/lib/docker
     rm -rf /etc/docker
     rm -rf /run/docker
     rm -rf /var/lib/dockershim
@@ -234,20 +238,20 @@ removemysql() {
     service mysql-server stop
     echo "开始卸载mysql"
 
-    sudo apt-get autoremove --purge mysql-server -y
-    sudo apt-get remove mysql-common -y
+    apt-get autoremove --purge mysql-server -y
+    apt-get remove mysql-common -y
 
-    sudo apt-get remove dbconfig-mysql -y
-    sudo apt-get remove mysql-client -y
-    sudo apt-get remove mysql-client-5.7 -y
-    sudo apt-get remove mysql-client-core-5.7 -y
+    apt-get remove dbconfig-mysql -y
+    apt-get remove mysql-client -y
+    apt-get remove mysql-client-5.7 -y
+    apt-get remove mysql-client-core-5.7 -y
 
-    sudo apt-get remove apparmor -y
-    sudo apt-get autoremove mysql* --purge -y
-    dpkg -l | grep ^rc | awk '{print $2}' | sudo xargs dpkg -P
+    apt-get remove apparmor -y
+    apt-get autoremove mysql* --purge -y
+    dpkg -l | grep ^rc | awk '{print $2}' | xargs dpkg -P
 
-    sudo rm /var/lib/mysql/ -R
-    sudo rm /etc/mysql/ -R
+    rm /var/lib/mysql/ -R
+    rm /etc/mysql/ -R
 
     echo ""
     echo "卸载完成"
@@ -263,18 +267,17 @@ cfpinstall() {
     read -n1 -p "Do you want to continue [Y/N]? " answer
     case $answer in
     Y | y)
-        echo "开始请手动克隆仓库"
         installphp
         echo "php 检查完成"
         nohup php vpscfptools/server.php start >vpscfptools/logs/server.log 2>&1 &
         echo "server 尝试开始"
-        sleep 2
-        cfpstatus
+
+        php /root/vpscfptools/server.php status
         ;;
 
     N | n)
         echo
-        echo "OK, goodbye"
+        echo "See you later"
         exit
         ;;
     esac
@@ -287,16 +290,16 @@ ufwinstall() {
     echo "请输入y以开启ufw"
     ufw enable
     echo "ufw已开启"
-    sudo ufw allow 22
+    ufw allow 22
     echo "已配置允许 22 端口"
-    sudo ufw default deny
+    ufw default deny
     echo "已配置关闭所有外部对本机的访问"
     ufwstatus
 
 }
 
 ufwdel() {
-    sudo ufw disable
+    ufw disable
     echo "ufw已关闭"
     ufwstatus
 }
@@ -308,7 +311,7 @@ ufwadd() {
         echo "$port: 无效端口."
         read -p "请输入端口号 (0-65535): " port
     done
-    sudo ufw allow $port
+    ufw allow $port
     echo "端口 $port 已放行"
     ufwstatus
 
@@ -326,7 +329,7 @@ ufwclose() {
         echo "$unport: 无效端口."
         read -p "请输入端口号 (0-65535): " unport
     done
-    sudo ufw delete allow $unport
+    ufw delete allow $unport
     echo "端口 $unport 已关闭"
     ufwstatus
 
@@ -364,11 +367,11 @@ bantime  = $timeban
 
 EOM
 
-    sudo service fail2ban start
+    service fail2ban start
     echo "服务已开启"
     echo ""
     echo "----服务状态----"
-    sudo fail2ban-client status sshd
+    fail2ban-client status sshd
 
 }
 
@@ -395,7 +398,6 @@ deb-src http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted unive
 EOM
         echo "source list已经写入阿里云源."
 
-        sleep 1
         aptupdatefun
     }
 
@@ -420,7 +422,6 @@ deb-src http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted univer
 EOM
         echo "source list已经写入阿里云源."
 
-        sleep 1
         aptupdatefun
     }
 
@@ -441,22 +442,20 @@ deb-src http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted univer
 EOM
         echo "source list已经写入阿里云源."
 
-        sleep 1
         aptupdatefun
     }
 
-    sleep 1
     echo "开始备份原列表"
-    sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
-    sleep 1
+    cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
+
     echo "原source list已备份."
-    sleep 1
+
     echo "检测你的系统版本为:"
     lsb_release -a
-    sleep 1
+
     echo "选择你的Ubuntu版本(其他版本请手动换源)"
-    sleep 1
-    echo "1:Ubuntu 16.04    2:Ubuntu 18.04(bionic)    3:Ubuntu 20.04(focal)  4:Ubuntu 22.04(jammy)"
+
+    echo "1:Ubuntu 18.04(bionic)    2:Ubuntu 20.04(focal)  3:Ubuntu 22.04(jammy)"
     read -p "请输入命令数字: " sourcesnumber
     case $sourcesnumber in
     1)
@@ -481,22 +480,12 @@ synchronization_time() {
     echo "同步前的时间: $(date -R)"
     echo "-----》即将同步为上海时间"
     waitinput
-    sudo cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-
-    sudo timedatectl set-timezone Asia/Shanghai
-
-    # 将当前的 UTC 时间写入硬件时钟 (硬件时间默认为UTC)
-    sudo timedatectl set-local-rtc 0
-    # 启用NTP时间同步:
-    sudo timedatectl set-ntp yes
-
-    # 手动校准-强制更新时间
-    # chronyc -a makestep
-    # 系统时钟同步硬件时钟
-
-    sudo hwclock -w
-    sudo systemctl restart rsyslog.service cron.service
-
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+    timedatectl set-timezone Asia/Shanghai
+    timedatectl set-local-rtc 0
+    timedatectl set-ntp yes
+    hwclock -w
+    systemctl restart rsyslog.service cron.service
     echo "当前系统时间: $(date -R)"
 }
 
@@ -509,9 +498,9 @@ openroot() {
         echo
 
         echo "开始备份原文件sshd_config"
-        sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
+        cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
         echo "原文件sshd_config已备份."
-        sleep 1
+
         echo "port 22" >>/etc/ssh/sshd_config
         echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
         echo "PasswordAuthentication yes" >>/etc/ssh/sshd_config
@@ -533,9 +522,9 @@ openroot() {
 sshpubonly() {
 
     echo "开始备份原文件sshd_config"
-    sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
+    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
     echo "原文件sshd_config已备份."
-    sleep 1
+
     echo "port 22" >>/etc/ssh/sshd_config
     echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
     echo "PasswordAuthentication no" >>/etc/ssh/sshd_config
@@ -547,11 +536,10 @@ sshpubonly() {
 
 supportcn() {
     echo ""
-    sudo apt-get install zhcon -y
-    sudo adduser $(whoami) video
+    apt-get install zhcon -y
+    adduser $(whoami) video
 
-    sleep 1
-    sudo zhcon --utf8
+    zhcon --utf8
     echo ""
     echo "Please enter 'zhcon --utf8' "
 
@@ -637,53 +625,62 @@ sysinfo() {
     echo "系统中关键文件修改时间:"
     ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
     echo ""
-    
+
     echo "是否进行磁盘测速？"
-    waitinput
-    echo "正在进行磁盘测速..."
-    
-    freespace=$(df -m . | awk 'NR==2 {print $4}')
-    if [ -z "${freespace}" ]; then
-        freespace=$(df -m . | awk 'NR==3 {print $3}')
-    fi
-    if [ ${freespace} -gt 1024 ]; then
+    read -n1 -p "Do you want to continue [Y/N]? " answer
+    case $answer in
+    Y | y)
 
-        io1=$(io_test 2048)
-        echo " I/O Speed(1st run) : $(_yellow "$io1")"
-        io2=$(io_test 2048)
-        echo " I/O Speed(2nd run) : $(_yellow "$io2")"
-        io3=$(io_test 2048)
-        echo " I/O Speed(3rd run) : $(_yellow "$io3")"
-        ioraw1=$(echo $io1 | awk 'NR==1 {print $1}')
-        [ "$(echo $io1 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw1=$(awk 'BEGIN{print '$ioraw1' * 1024}')
-        ioraw2=$(echo $io2 | awk 'NR==1 {print $1}')
-        [ "$(echo $io2 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw2=$(awk 'BEGIN{print '$ioraw2' * 1024}')
-        ioraw3=$(echo $io3 | awk 'NR==1 {print $1}')
-        [ "$(echo $io3 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw3=$(awk 'BEGIN{print '$ioraw3' * 1024}')
-        ioall=$(awk 'BEGIN{print '$ioraw1' + '$ioraw2' + '$ioraw3'}')
-        ioavg=$(awk 'BEGIN{printf "%.1f", '$ioall' / 3}')
-        echo " I/O Speed(average) : $(_yellow "$ioavg MB/s")"
-    else
-        echo " $(_red "Not enough space for I/O Speed test!")"
-    fi
+        echo "正在进行磁盘测速..."
 
+        freespace=$(df -m . | awk 'NR==2 {print $4}')
+        if [ -z "${freespace}" ]; then
+            freespace=$(df -m . | awk 'NR==3 {print $3}')
+        fi
+        if [ ${freespace} -gt 1024 ]; then
 
+            io1=$(io_test 2048)
+            echo " I/O Speed(1st run) : $(_yellow "$io1")"
+            io2=$(io_test 2048)
+            echo " I/O Speed(2nd run) : $(_yellow "$io2")"
+            io3=$(io_test 2048)
+            echo " I/O Speed(3rd run) : $(_yellow "$io3")"
+            ioraw1=$(echo $io1 | awk 'NR==1 {print $1}')
+            [ "$(echo $io1 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw1=$(awk 'BEGIN{print '$ioraw1' * 1024}')
+            ioraw2=$(echo $io2 | awk 'NR==1 {print $1}')
+            [ "$(echo $io2 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw2=$(awk 'BEGIN{print '$ioraw2' * 1024}')
+            ioraw3=$(echo $io3 | awk 'NR==1 {print $1}')
+            [ "$(echo $io3 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw3=$(awk 'BEGIN{print '$ioraw3' * 1024}')
+            ioall=$(awk 'BEGIN{print '$ioraw1' + '$ioraw2' + '$ioraw3'}')
+            ioavg=$(awk 'BEGIN{printf "%.1f", '$ioall' / 3}')
+            echo " I/O Speed(average) : $(_yellow "$ioavg MB/s")"
+        else
+            echo " $(_red "Not enough space for I/O Speed test!")"
+        fi
+        ;;
+
+    N | n)
+
+        echo -e "OK, goodbye"
+        exit
+        ;;
+    esac
 
 }
 
 diskinfo() {
 
     echo "\n分区信息:"
-    sudo df -Th
-    sudo lsblk
+    df -Th
+    lsblk
     echo -e "\n 磁盘信息:"
-    sudo fdisk -l
+    fdisk -l
     echo -e "\n PV物理卷查看:"
-    sudo pvscan
+    pvscan
     echo -e "\n vgs虚拟卷查看:"
-    sudo vgs
+    vgs
     echo -e "\n lvscan逻辑卷扫描:"
-    sudo lvscan
+    lvscan
     echo -e "\n 分区扩展"
     echo "Ubuntu \n lvextend -L +74G /dev/ubuntu-vg/ubuntu-lv"
     echo "lsblk"
@@ -694,8 +691,6 @@ diskinfo() {
     echo " "
 
 }
-
-
 
 staticip() {
     echo "确保原文件手工备份"
@@ -711,7 +706,7 @@ staticip() {
     echo "网卡为" $ens
     echo "开始备份原文件"
 
-    sudo cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
+    cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
     echo "原00-installer-config.yaml已备份."
 
     echo "开始配置静态ip"
@@ -759,7 +754,7 @@ network:
 EOM
     echo "配置信息成功写入,成功切换ip 、ssh已断开,请使用设置的ip重新登录"
     netplan apply
-    sleep 1
+
     echo "配置已应用"
 }
 
@@ -786,7 +781,7 @@ network:
 EOM
     echo "配置信息成功写入"
     netplan apply
-    sleep 1
+
     echo "DHCP已开启"
 }
 
@@ -912,21 +907,19 @@ rmcon() {
 software() {
     menutop
 
-    echo "<安装>"
+    echo "1:update apt  (升级源)    2: 安装常用软件     3.安装八合一    4. 安装x-ui              "
 
-    echo "1:update apt  (升级源)    2: 安装核心软件     3.安装常用软件    4. 安装x-ui              "
+    echo ""
+    next
+    _red "5:卸载nginx    6: 卸载Apache     7. 卸载php    8. 卸载docker    9:卸载v2ray         "
+    echo ""
+    next
+
+    _red "10:卸载mysql             "
+    echo ""
     next
     echo ""
-    echo "<卸载>"
-
-    echo "5:卸载nginx    6: 卸载Apache     7. 卸载php    8. 卸载docker    9:卸载v2ray         "
-    next
-    echo "10:卸载mysql             "
-    next
-    echo ""
-    echo "<cfp>"
-
-    echo "30:一键配置cfp  31. 查看cfp-server状态 "
+    echo "30:一键配置cfp  31. 查看cfpserver状态 "
     next
     echo "32:安装PHP及依赖    33: 开启cfpserver  34. 停止cfpserver   "
 
@@ -937,17 +930,19 @@ software() {
         ;;
     1)
         aptupdatefun
+        waitinput
         ./init.sh 1
 
         ;;
     2)
         installbase
+        waitinput
         ./init.sh 1
 
         ;;
     3)
-        installuseful
-        ./init.sh 1
+        wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/mack-a/v2ray-agent/master/install.sh" && chmod 700 /root/install.sh && /root/install.sh
+        vasma
         ;;
 
     4)
@@ -976,11 +971,13 @@ software() {
         ;;
     30)
         cfpinstall
+        waitinput
         ./init.sh 1
         ;;
 
     31)
         php /root/vpscfptools/server.php status
+        waitinput
         ./init.sh 1
 
         ;;
@@ -989,10 +986,12 @@ software() {
         ;;
     33)
         nohup php vpscfptools/server.php start >vpscfptools/logs/server.log 2>&1 &
+        waitinput
         ./init.sh 1
         ;;
     34)
         php /root/vpscfptools/server.php stop
+        waitinput
         ./init.sh 1
         ;;
 
@@ -1009,9 +1008,9 @@ software() {
 
 networktools() {
     menutop
-    echo "<--物理机专用-->"
-    echo "1:配置静态ip    2:启用dhcp动态获取 "
-    echo "<--物理机专用-->"
+    
+    _red "1:配置本地静态ip    2:启用dhcp动态获取"
+    echo
     next
     echo "3:网络信息      4.网络测速 (外网speednet)   "
     next
@@ -1029,6 +1028,7 @@ networktools() {
         ;;
     3)
         netinfo
+        waitinput
         ./init.sh 2
         ;;
     4)
@@ -1037,11 +1037,13 @@ networktools() {
 
     5)
         route -n
+        waitinput
         ./init.sh 2
         ;;
 
     6)
         netstat -tunlp
+        waitinput
         ./init.sh 2
         ;;
 
@@ -1071,40 +1073,49 @@ ufwsafe() {
         ;;
     1)
         ufwinstall
+        waitinput
         ./init.sh 3
 
         ;;
     2)
         ufwdel
+        waitinput
         ./init.sh 3
         ;;
 
     4)
         ufwstatus
+        waitinput
         ./init.sh 3
         ;;
     5)
         ufwadd
+        waitinput
         ./init.sh 3
         ;;
     6)
         ufwclose
+        waitinput
         ./init.sh 3
         ;;
     7)
         installfail2ban
+        waitinput
         ./init.sh 3
         ;;
     8)
-        sudo fail2ban-client status sshd
+        fail2ban-client status sshd
+        waitinput
         ./init.sh 3
         ;;
     9)
-        sudo lastb | grep root | awk '{print $3}' | sort | uniq
+        lastb | grep root | awk '{print $3}' | sort | uniq
+        waitinput
         ./init.sh 3
         ;;
     10)
         netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
+        waitinput
         ./init.sh 3
         ;;
     99)
@@ -1162,25 +1173,28 @@ sysset() {
         sshsetpub
 
         ./init.sh 4
+        waitinput
         ;;
     8)
 
         cat /root/.ssh/authorized_keys
+        waitinput
         ./init.sh 4
         ;;
 
     9)
         sysinfo
-        
 
         ;;
     10)
         diskinfo
+        waitinput
         ./init.sh 4
         ;;
     11)
         crontab -e
         service cron reload
+        waitinput
         ./init.sh 4
         ;;
 
@@ -1208,7 +1222,7 @@ dockermain() {
     echo "5:后台运行一个容器       6:运行一个终端交互容器       8: 进入交互式容器"
     next
     echo "9:开启一个容器           10:停止一个容器             11:删除一个容器         "
-    
+
     menubottom
 
     case $number in
@@ -1220,23 +1234,27 @@ dockermain() {
     2)
 
         docker images
-
+        waitinput
         ./init.sh 5
         ;;
     3)
         docker ps
+        waitinput
         ./init.sh 5
         ;;
     4)
         docker ps -a
+        waitinput
         ./init.sh 5
         ;;
     5)
         dockerrund
+        waitinput
         ./init.sh 5
         ;;
     6)
         dockerrunit
+        waitinput
         ./init.sh 5
         ;;
     7) ;;
@@ -1246,14 +1264,17 @@ dockermain() {
         ;;
     9)
         opencon
+        waitinput
         ./init.sh 5
         ;;
     10)
         stopcon
+        waitinput
         ./init.sh 5
         ;;
     11)
         rmcon
+        waitinput
         ./init.sh 5
         ;;
     12) ;;
@@ -1278,7 +1299,7 @@ if [[ "$number" = "" ]]; then
 
     echo "1:软件      2:网络     3:ufw防火墙&安全"
     next
-    echo "4:系统      5:docker"
+    echo "4:系统      5:docker   "
     next
     echo "66:脚本升级 "
     next
@@ -1313,7 +1334,7 @@ case $number in
     ;;
 
 66)
-    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && sudo ./init.sh
+    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
     ;;
 *)
     inputerror
