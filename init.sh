@@ -4,7 +4,7 @@
 export LANG=en_US.UTF-8
 #定义全局变量：
 datevar=$(date)
-version='23.4.17'
+version='23.5.17'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -1012,9 +1012,11 @@ networktools() {
     _red "1:配置本地静态ip    2:启用dhcp动态获取"
     echo
     next
-    echo "3:网络信息      4.网络测速 (外网speednet)   "
+    echo "3:网络信息      4.网络测速 (外网speednet)  "
     next
     echo "5:路由表        6:查看监听端口     "
+    next
+    echo "7. Speedtest CLI 外网测速 "
     menubottom
 
     case $number in
@@ -1043,6 +1045,13 @@ networktools() {
 
     6)
         netstat -tunlp
+        waitinput
+        ./init.sh 2
+        ;;
+
+        7)
+        curl -fsSL git.io/speedtest-cli.sh | sudo bash
+        speedtest
         waitinput
         ./init.sh 2
         ;;
