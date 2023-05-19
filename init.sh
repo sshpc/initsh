@@ -4,7 +4,7 @@
 export LANG=en_US.UTF-8
 #定义全局变量：
 datevar=$(date)
-version='23.5.17'
+version='23.5.19'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -31,7 +31,7 @@ _blue() {
 }
 
 waitinput() {
-    read -n1 -r -p "按任意键继续..."
+    read -n1 -r -p "按任意键继续...(退出 Ctrl+C)"
 }
 
 #apt更新
@@ -56,8 +56,11 @@ menutop() {
 
 #二级菜单底部
 menubottom() {
+    
     next
-    echo "0: 退出    99: 返回主页"
+    echo ""
+    _blue "0: 退出    99: 返回主页"
+    echo ""
     echo ""
 
     read -p "请输入命令数字: " number
@@ -105,18 +108,9 @@ installbase() {
     echo "所有包都已安装完成"
 }
 
-installphp() {
-
-    aptupdatefun
-
-    echo "开始安装php"
-    apt install php-dev php-curl php-zip -y
-
-}
-
 removephp() {
     echo ""
-
+    next
     echo "开始卸载php"
     apt remove php -y
     apt-get --purge remove php -y
@@ -124,18 +118,18 @@ removephp() {
     apt-get --purge remove php-* -y
     apt-get autoremove php -y
     echo ""
-
+    next
     echo "删除所有包含php的文件"
     rm -rf /etc/php
     rm -rf /etc/init.d/php
     find /etc -name *php* -print0 | xargs -0 rm -rf
-
+    next
     echo "清除dept列表"
     apt purge $(dpkg -l | grep php | awk '{print $2}' | tr "\n" " ")
-
+    next
     echo ""
     echo "卸载完成"
-
+    next
     echo ""
 
 }
@@ -144,19 +138,20 @@ removenginx() {
     echo ""
     echo "服务关闭"
     service nginx stop
+    next
     echo "开始卸载nginx"
     apt remove nginx -y
     apt-get --purge remove nginx -y
     apt-get --purge remove nginx-common -y
     apt-get --purge remove nginx-core -y
     echo ""
-
+    next
     echo "删除所有包含nginx的文件"
 
     find / -name nginx* -print0 | xargs -0 rm -rf
     echo ""
     echo "卸载完成"
-
+    next
     echo ""
 
 }
@@ -165,6 +160,7 @@ removeapache() {
     echo ""
     echo "服务关闭"
     service apache2 stop
+    next
     echo "开始卸载apache"
     apt remove apache2 -y
     apt-get --purge remove apache2 -y
@@ -172,13 +168,14 @@ removeapache() {
     apt-get --purge remove apache2-utils -y
     apt-get autoremove apache2
     echo ""
-
+    next
     echo "删除所有包含apache的文件"
     rm -rf /etc/apache2
     rm -rf /etc/init.d/apache2
     find / -name apache2* -print0 | xargs -0 rm -rf
     echo ""
     echo "卸载完成"
+    next
 
     echo ""
 
@@ -190,7 +187,9 @@ removedocker() {
     docker rm $(docker ps -a -q)
     docker rmi $(docker images -q)
     systemctl stop docker
+    echo "服务关闭"
     service docker stop
+    next
 
     apt-get autoremove docker docker-ce docker-engine docker.io containerd runc
     dpkg -l | grep docker
@@ -204,6 +203,7 @@ removedocker() {
 
     echo ""
     echo "卸载完成"
+    next
 
     echo ""
 
@@ -228,6 +228,8 @@ removev2() {
     rm -rf /lib/systemd/system/v2ray.service
 
     rm -rf /etc/init.d/v2ray
+    echo "卸载完成"
+    next
 
 }
 
@@ -236,8 +238,9 @@ removemysql() {
     echo ""
     echo "服务关闭"
     service mysql-server stop
+    next
     echo "开始卸载mysql"
-
+    next
     apt-get autoremove --purge mysql-server -y
     apt-get remove mysql-common -y
 
@@ -252,35 +255,12 @@ removemysql() {
 
     rm /var/lib/mysql/ -R
     rm /etc/mysql/ -R
+    next
 
     echo ""
     echo "卸载完成"
 
     echo ""
-
-}
-
-cfpinstall() {
-
-    echo "确保cfp的仓库在root目录已克隆"
-
-    read -n1 -p "Do you want to continue [Y/N]? " answer
-    case $answer in
-    Y | y)
-        installphp
-        echo "php 检查完成"
-        nohup php vpscfptools/server.php start >vpscfptools/logs/server.log 2>&1 &
-        echo "server 尝试开始"
-
-        php /root/vpscfptools/server.php status
-        ;;
-
-    N | n)
-        echo
-        echo "See you later"
-        exit
-        ;;
-    esac
 
 }
 
@@ -902,12 +882,197 @@ rmcon() {
 
     docker ps -a
 }
+systemcheck() {
+
+    echo "僵尸进程:"
+    ps -ef | grep zombie | grep -v grep
+    if [ $? == 1 ]; then
+        echo ">>>无僵尸进程"
+    else
+        echo ">>>有僵尸进程------[需调整]"
+    fi
+    next
+    echo "耗CPU最多的进程:"
+    ps auxf | sort -nr -k 3 | head -5
+    next
+    echo "耗内存最多的进程:"
+    ps auxf | sort -nr -k 4 | head -5
+    next
+    echo "环境变量:"
+    env
+
+    next
+    echo "监听端口:"
+    netstat -tunlp
+    next
+    echo "当前建立的连接:"
+    netstat -n | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'
+    next
+    echo "开机启动的服务:"
+    systemctl list-unit-files | grep enabled
+    echo " "
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>系统用户情况<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    echo "活动用户:"
+    w | tail -n +2
+    next
+    echo "系统所有用户:"
+    cut -d: -f1,2,3,4 /etc/passwd
+    next
+    echo "系统所有组:"
+    cut -d: -f1,2,3 /etc/group
+
+    echo " "
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>身份鉴别安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+
+    more /etc/login.defs | grep -E "PASS_MAX_DAYS" | grep -v "#" | awk -F' ' '{if($2!=90){print ">>>密码过期天数是"$2"天,请管理员改成90天------[需调整]"}}'
+    next
+    grep -i "^auth.*required.*pam_tally2.so.*$" /etc/pam.d/sshd >/dev/null
+    if [ $? == 0 ]; then
+        echo ">>>登入失败处理:已开启"
+    else
+        echo ">>>登入失败处理:未开启,请加固登入失败锁定功能----------[需调整]"
+    fi
+    echo " "
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>访问控制安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    echo "系统中存在以下非系统默认用户:"
+    more /etc/passwd | awk -F ":" '{if($3>500){print ">>>/etc/passwd里面的"$1 "的UID为"$3"，该账户非系统默认账户，请管理员确认是否为可疑账户--------[需调整]"}}'
+    next
+    echo "系统特权用户:"
+    awk -F: '$3==0 {print $1}' /etc/passwd
+    next
+    echo "系统中空口令账户:"
+    awk -F: '($2=="!!") {print $1"该账户为空口令账户，请管理员确认是否为新增账户，如果为新建账户，请配置密码-------[需调整]"}' /etc/shadow
+    echo " "
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>安全审计<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    echo "正常情况下登录到本机30天内的所有用户的历史记录:"
+    last | head -n 30
+    next
+    echo "查看syslog日志审计服务是否开启:"
+    if service rsyslog status | egrep " active \(running"; then
+        echo ">>>经分析,syslog服务已开启"
+    else
+        echo ">>>经分析,syslog服务未开启，建议通过service rsyslog start开启日志审计功能---------[需调整]"
+    fi
+    next
+    echo "查看syslog日志是否开启外发:"
+    if more /etc/rsyslog.conf | egrep "@...\.|@..\.|@.\.|\*.\* @...\.|\*\.\* @..\.|\*\.\* @.\."; then
+        echo ">>>经分析,客户端syslog日志已开启外发--------[需调整]"
+    else
+        echo ">>>经分析,客户端syslog日志未开启外发---------[无需调整]"
+    fi
+    next
+    echo "审计的要素和审计日志:"
+    more /etc/rsyslog.conf | grep -v "^[$|#]" | grep -v "^$"
+    next
+    echo "系统中关键文件修改时间:"
+    ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
+
+    next
+    echo "检查重要日志文件是否存在:"
+    log_secure=/var/log/secure
+    log_messages=/var/log/messages
+    log_cron=/var/log/cron
+    log_boot=/var/log/boot.log
+    log_dmesg=/var/log/dmesg
+    if [ -e "$log_secure" ]; then
+        echo ">>>/var/log/secure日志文件存在"
+    else
+        echo ">>>/var/log/secure日志文件不存在------[需调整]"
+    fi
+    if [ -e "$log_messages" ]; then
+        echo ">>>/var/log/messages日志文件存在"
+    else
+        echo ">>>/var/log/messages日志文件不存在------[需调整]"
+    fi
+    if [ -e "$log_cron" ]; then
+        echo ">>>/var/log/cron日志文件存在"
+    else
+        echo ">>>/var/log/cron日志文件不存在--------[需调整]"
+    fi
+    if [ -e "$log_boot" ]; then
+        echo ">>>/var/log/boot.log日志文件存在"
+    else
+        echo ">>>/var/log/boot.log日志文件不存在--------[需调整]"
+    fi
+    if [ -e "$log_dmesg" ]; then
+        echo ">>>/var/log/dmesg日志文件存在"
+    else
+        echo ">>>/var/log/dmesg日志文件不存在--------[需调整]"
+    fi
+
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>入侵防范安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    echo "系统入侵行为:"
+    more /var/log/secure | grep refused
+    if [ $? == 0 ]; then
+        echo "有入侵行为，请分析处理--------[需调整]"
+    else
+        echo ">>>无入侵行为"
+    fi
+    next
+    echo "用户错误登入列表:"
+    lastb | head >/dev/null
+    if [ $? == 1 ]; then
+        echo ">>>无用户错误登入列表"
+    else
+        echo ">>>用户错误登入--------[需调整]"
+        lastb | head
+    fi
+    next
+    echo "ssh暴力登入信息:"
+    more /var/log/secure | grep "Failed" >/dev/null
+    if [ $? == 1 ]; then
+        echo ">>>无ssh暴力登入信息"
+    else
+        more /var/log/secure | awk '/Failed/{print $(NF-3)}' | sort | uniq -c | awk '{print ">>>登入失败的IP和尝试次数: "$2"="$1"次---------[需调整]";}'
+    fi
+    echo " "
+
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>资源控制安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+
+    echo "查看是否开启了ssh服务:"
+    if service sshd status | grep -E "listening on|active \(running\)"; then
+        echo ">>>SSH服务已开启"
+    else
+        echo ">>>SSH服务未开启--------[需调整]"
+    fi
+    next
+    echo "查看是否开启了Telnet-Server服务:"
+    if more /etc/xinetd.d/telnetd 2>&1 | grep -E "disable=no"; then
+        echo ">>>Telnet-Server服务已开启"
+    else
+        echo ">>>Telnet-Server服务未开启--------[无需调整]"
+    fi
+    next
+    ps axu | grep iptables | grep -v grep || ps axu | grep firewalld | grep -v grep
+    if [ $? == 0 ]; then
+        echo ">>>防火墙已启用"
+        iptables -nvL --line-numbers
+    else
+        echo ">>>防火墙未启用--------[需调整]"
+    fi
+    next
+    echo "查看系统SSH远程访问设置策略(host.deny拒绝列表):"
+    if more /etc/hosts.deny | grep -E "sshd"; then
+        echo ">>>远程访问策略已设置--------[需调整]"
+    else
+        echo ">>>远程访问策略未设置--------[无需调整]"
+    fi
+    next
+    echo "查看系统SSH远程访问设置策略(hosts.allow允许列表):"
+    if more /etc/hosts.allow | grep -E "sshd"; then
+        echo ">>>远程访问策略已设置--------[需调整]"
+    else
+        echo ">>>远程访问策略未设置--------[无需调整]"
+    fi
+
+}
 
 #二级菜单
+#软件
 software() {
     menutop
 
-    echo "1:update apt  (升级源)    2: 安装常用软件     3.安装八合一    4. 安装x-ui              "
+    echo "1:update apt  (升级源)    2: 安装常用软件     3.安装xray八合一    4. 安装x-ui              "
 
     echo ""
     next
@@ -915,18 +1080,14 @@ software() {
     echo ""
     next
 
-    _red "10:卸载mysql             "
+    _red "10:卸载mysql       "
     echo ""
-    next
-    echo ""
-    echo "30:一键配置cfp  31. 查看cfpserver状态 "
-    next
-    echo "32:安装PHP及依赖    33: 开启cfpserver  34. 停止cfpserver   "
 
     menubottom
 
     case $number in
     0) #退出#
+        exit
         ;;
     1)
         aptupdatefun
@@ -969,32 +1130,6 @@ software() {
     10)
         removemysql
         ;;
-    30)
-        cfpinstall
-        waitinput
-        ./init.sh 1
-        ;;
-
-    31)
-        php /root/vpscfptools/server.php status
-        waitinput
-        ./init.sh 1
-
-        ;;
-    32)
-        installphp
-        ;;
-    33)
-        nohup php vpscfptools/server.php start >vpscfptools/logs/server.log 2>&1 &
-        waitinput
-        ./init.sh 1
-        ;;
-    34)
-        php /root/vpscfptools/server.php stop
-        waitinput
-        ./init.sh 1
-        ;;
-
     99)
         ./init.sh
         ;;
@@ -1005,10 +1140,10 @@ software() {
     esac
 
 }
-
+#网络
 networktools() {
     menutop
-    
+
     _red "1:配置本地静态ip    2:启用dhcp动态获取"
     echo
     next
@@ -1021,6 +1156,7 @@ networktools() {
 
     case $number in
     0) #退出#
+        exit
         ;;
     1)
         staticip
@@ -1049,7 +1185,7 @@ networktools() {
         ./init.sh 2
         ;;
 
-        7)
+    7)
         curl -fsSL git.io/speedtest-cli.sh | sudo bash
         speedtest
         waitinput
@@ -1066,7 +1202,7 @@ networktools() {
     esac
 
 }
-
+#ufw防火墙&安全
 ufwsafe() {
     menutop
     echo "1:开启防火墙-ufw          2:关闭防火墙-ufw           "
@@ -1079,6 +1215,7 @@ ufwsafe() {
     menubottom
     case $number in
     0) #退出#
+        exit
         ;;
     1)
         ufwinstall
@@ -1137,7 +1274,7 @@ ufwsafe() {
     esac
 
 }
-
+#系统
 sysset() {
 
     menutop
@@ -1152,10 +1289,13 @@ sysset() {
     echo "9:系统信息                10:磁盘信息     "
     next
     echo "11:计划任务crontab        12:开机启动的服务"
+    next
+    echo "13:系统检查"
     menubottom
 
     case $number in
     0) #退出#
+        exit
         ;;
     1)
         huanyuanfun
@@ -1210,6 +1350,9 @@ sysset() {
     12)
         systemctl list-unit-files | grep enabled
         ;;
+    13)
+        systemcheck
+        ;;
     99)
         ./init.sh
         ;;
@@ -1220,7 +1363,7 @@ sysset() {
     esac
 
 }
-
+#docker
 dockermain() {
     menutop
 
@@ -1236,6 +1379,7 @@ dockermain() {
 
     case $number in
     0) #退出#
+        exit
         ;;
     1)
         apt install docker -y
@@ -1320,6 +1464,7 @@ fi
 
 case $number in
 0) #退出#
+    exit
     ;;
 1)
     menuname='主页/软件'
