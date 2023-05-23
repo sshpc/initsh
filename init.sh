@@ -4,7 +4,7 @@
 export LANG=en_US.UTF-8
 #定义全局变量：
 datevar=$(date)
-version='23.5.19'
+version='23.5.23'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -56,7 +56,7 @@ menutop() {
 
 #二级菜单底部
 menubottom() {
-    
+
     next
     echo ""
     _blue "0: 退出    99: 返回主页"
@@ -65,15 +65,16 @@ menubottom() {
 
     read -p "请输入命令数字: " number
 }
-
+#输入有误
 inputerror() {
     echo '>---------输入有误,脚本终止--------<'
 }
-
+#io测试
 io_test() {
     (LANG=C dd if=/dev/zero of=benchtest_$$ bs=512k count=$1 conv=fdatasync && rm -f benchtest_$$) 2>&1 | awk -F, '{io=$NF} END { print io}' | sed 's/^[ \t]*//;s/[ \t]*$//'
 }
 
+#安装常用包
 installbase() {
 
     aptupdatefun
@@ -334,18 +335,15 @@ installfail2ban() {
     if [[ "$timeban" = "" ]]; then
         timeban=604800
     fi
+    rm /etc/fail2ban/jail.d/sshd.local
 
-    cat <<EOM >/etc/fail2ban/jail.d/sshd.local
-
-[ssh-iptables]
-enabled  = true
-filter   = sshd
-action   = iptables[name=SSH, port=ssh, protocol=tcp]
-logpath  = /var/log/auth.log
-maxretry = $retry
-bantime  = $timeban
-
-EOM
+    echo "[ssh-iptables]" >>/etc/fail2ban/jail.d/sshd.local
+    echo "enabled  = true" >>/etc/fail2ban/jail.d/sshd.local
+    echo "filter   = sshd" >>/etc/fail2ban/jail.d/sshd.local
+    echo "action   = iptables[name=SSH, port=ssh, protocol=tcp]" >>/etc/fail2ban/jail.d/sshd.local
+    echo "logpath  = /var/log/auth.log" >>/etc/fail2ban/jail.d/sshd.local
+    echo "maxretry = $retry" >>/etc/fail2ban/jail.d/sshd.local
+    echo "bantime  = $timeban" >>/etc/fail2ban/jail.d/sshd.local
 
     service fail2ban start
     echo "服务已开启"
@@ -358,77 +356,55 @@ EOM
 huanyuanfun() {
 
     a1804() {
-        echo "开始写入阿里云源Ubuntu 1804版本."
-        cat <<EOM >/etc/apt/sources.list
-deb http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse
+        echo "deb http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse" >>/etc/apt/sources.list
 
-deb http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse
+        echo "deb http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse" >>/etc/apt/sources.list
 
-deb http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse
+        echo "deb http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse" >>/etc/apt/sources.list
 
-# deb http://mirrors.aliyun.com/ubuntu/ bionic-proposed main restricted universe multiverse
-# deb-src http://mirrors.aliyun.com/ubuntu/ bionic-proposed main restricted universe multiverse
+        echo "deb http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse" >>/etc/apt/sources.list
 
-deb http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse
-
-EOM
-        echo "source list已经写入阿里云源."
-
-        aptupdatefun
     }
 
     a2004() {
-        echo "开始写入阿里云源Ubuntu 2004版本."
-        cat <<EOM >/etc/apt/sources.list
-deb http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse
+        echo "deb http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse" >>/etc/apt/sources.list
 
-deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse
+        echo "deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse" >>/etc/apt/sources.list
 
-deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse
+        echo "deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse" >>/etc/apt/sources.list
 
-# deb http://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse
-# deb-src http://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse
+        echo "deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse" >>/etc/apt/sources.list
 
-deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse
-
-EOM
-        echo "source list已经写入阿里云源."
-
-        aptupdatefun
     }
 
     a2204() {
-        echo "开始写入阿里云源Ubuntu 2204版本."
-        cat <<EOM >/etc/apt/sources.list
-deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
-deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse
-deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse
-deb http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse
-deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse
+        echo "deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse" >>/etc/apt/sources.list
+        echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse" >>/etc/apt/sources.list
 
-EOM
-        echo "source list已经写入阿里云源."
-
-        aptupdatefun
     }
 
     echo "开始备份原列表"
     cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
 
-    echo "原source list已备份."
+    echo "原source list已全量备份至 /etc/apt/sources.list.bak.$datevar"
+
+    rm /etc/apt/sources.list
 
     echo "检测你的系统版本为:"
     lsb_release -a
@@ -436,16 +412,27 @@ EOM
     echo "选择你的Ubuntu版本(其他版本请手动换源)"
 
     echo "1:Ubuntu 18.04(bionic)    2:Ubuntu 20.04(focal)  3:Ubuntu 22.04(jammy)"
+
     read -p "请输入命令数字: " sourcesnumber
+    echo "开始写入阿里源$sourcesnumber"
     case $sourcesnumber in
     1)
         a1804
+        echo "source list已经写入阿里云源."
+
+        aptupdatefun
         ;;
     2)
         a2004
+        echo "source list已经写入阿里云源."
+
+        aptupdatefun
         ;;
     3)
         a2204
+        echo "source list已经写入阿里云源."
+
+        aptupdatefun
         ;;
 
     *)
@@ -1066,6 +1053,14 @@ systemcheck() {
     fi
 
 }
+cputest() {
+    echo "检查安装stress"
+    apt install stress -y
+    echo "默认单核60s测速 手动测试命令: stress -c 2 -t 100  #2代表核数 测试时间100s"
+    waitinput
+    stress -c 1 -t 60
+
+}
 
 #二级菜单
 #软件
@@ -1278,7 +1273,7 @@ ufwsafe() {
 sysset() {
 
     menutop
-    echo "1:换源    2:同步时间      3:support Chinese 中文显示"
+    echo "1:换阿里源    2:同步时间      3:support Chinese 中文显示"
     next
     echo "4:密码秘钥root登录         5. 秘钥root登录   "
     next
@@ -1290,7 +1285,7 @@ sysset() {
     next
     echo "11:计划任务crontab        12:开机启动的服务"
     next
-    echo "13:系统检查"
+    echo "13:系统检查            14:cpu压力测试"
     menubottom
 
     case $number in
@@ -1352,6 +1347,9 @@ sysset() {
         ;;
     13)
         systemcheck
+        ;;
+    14)
+        cputest
         ;;
     99)
         ./init.sh
