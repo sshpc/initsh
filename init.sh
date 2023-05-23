@@ -4,7 +4,7 @@
 export LANG=en_US.UTF-8
 #定义全局变量：
 datevar=$(date)
-version='23.5.23'
+version='23.5.23.2'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -43,6 +43,7 @@ aptupdatefun() {
 
 #菜单头部
 menutop() {
+    clear
 
     echo ""
     _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v$version"
@@ -67,7 +68,9 @@ menubottom() {
 }
 #输入有误
 inputerror() {
-    echo '>---------输入有误,脚本终止--------<'
+    echo ""
+    _yellow '>~~~~~~~~~~~~~~输入有误,脚本终止~~~~~~~~~~~~~~~~<'
+    echo ""
 }
 #io测试
 io_test() {
@@ -399,12 +402,7 @@ huanyuanfun() {
 
     }
 
-    echo "开始备份原列表"
-    cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
-
-    echo "原source list已全量备份至 /etc/apt/sources.list.bak.$datevar"
-
-    rm /etc/apt/sources.list
+    menutop
 
     echo "检测你的系统版本为:"
     lsb_release -a
@@ -414,6 +412,14 @@ huanyuanfun() {
     echo "1:Ubuntu 18.04(bionic)    2:Ubuntu 20.04(focal)  3:Ubuntu 22.04(jammy)"
 
     read -p "请输入命令数字: " sourcesnumber
+
+    echo "开始备份原列表"
+    cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
+
+    echo "原source list已全量备份至 /etc/apt/sources.list.bak.$datevar"
+
+    rm /etc/apt/sources.list
+
     echo "开始写入阿里源$sourcesnumber"
     case $sourcesnumber in
     1)
@@ -593,45 +599,7 @@ sysinfo() {
     ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
     echo ""
 
-    echo "是否进行磁盘测速？"
-    read -n1 -p "Do you want to continue [Y/N]? " answer
-    case $answer in
-    Y | y)
-
-        echo "正在进行磁盘测速..."
-
-        freespace=$(df -m . | awk 'NR==2 {print $4}')
-        if [ -z "${freespace}" ]; then
-            freespace=$(df -m . | awk 'NR==3 {print $3}')
-        fi
-        if [ ${freespace} -gt 1024 ]; then
-
-            io1=$(io_test 2048)
-            echo " I/O Speed(1st run) : $(_yellow "$io1")"
-            io2=$(io_test 2048)
-            echo " I/O Speed(2nd run) : $(_yellow "$io2")"
-            io3=$(io_test 2048)
-            echo " I/O Speed(3rd run) : $(_yellow "$io3")"
-            ioraw1=$(echo $io1 | awk 'NR==1 {print $1}')
-            [ "$(echo $io1 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw1=$(awk 'BEGIN{print '$ioraw1' * 1024}')
-            ioraw2=$(echo $io2 | awk 'NR==1 {print $1}')
-            [ "$(echo $io2 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw2=$(awk 'BEGIN{print '$ioraw2' * 1024}')
-            ioraw3=$(echo $io3 | awk 'NR==1 {print $1}')
-            [ "$(echo $io3 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw3=$(awk 'BEGIN{print '$ioraw3' * 1024}')
-            ioall=$(awk 'BEGIN{print '$ioraw1' + '$ioraw2' + '$ioraw3'}')
-            ioavg=$(awk 'BEGIN{printf "%.1f", '$ioall' / 3}')
-            echo " I/O Speed(average) : $(_yellow "$ioavg MB/s")"
-        else
-            echo " $(_red "Not enough space for I/O Speed test!")"
-        fi
-        ;;
-
-    N | n)
-
-        echo -e "OK, goodbye"
-        exit
-        ;;
-    esac
+    
 
 }
 
@@ -1062,26 +1030,63 @@ cputest() {
 
 }
 
+iotestspeed(){
+
+        _blue "正在进行磁盘测速..."
+        echo ''
+
+        freespace=$(df -m . | awk 'NR==2 {print $4}')
+        if [ -z "${freespace}" ]; then
+            freespace=$(df -m . | awk 'NR==3 {print $3}')
+        fi
+        if [ ${freespace} -gt 1024 ]; then
+
+            io1=$(io_test 2048)
+            echo " I/O Speed(1st run) : $(_yellow "$io1")"
+            io2=$(io_test 2048)
+            echo " I/O Speed(2nd run) : $(_yellow "$io2")"
+            io3=$(io_test 2048)
+            echo " I/O Speed(3rd run) : $(_yellow "$io3")"
+            ioraw1=$(echo $io1 | awk 'NR==1 {print $1}')
+            [ "$(echo $io1 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw1=$(awk 'BEGIN{print '$ioraw1' * 1024}')
+            ioraw2=$(echo $io2 | awk 'NR==1 {print $1}')
+            [ "$(echo $io2 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw2=$(awk 'BEGIN{print '$ioraw2' * 1024}')
+            ioraw3=$(echo $io3 | awk 'NR==1 {print $1}')
+            [ "$(echo $io3 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw3=$(awk 'BEGIN{print '$ioraw3' * 1024}')
+            ioall=$(awk 'BEGIN{print '$ioraw1' + '$ioraw2' + '$ioraw3'}')
+            ioavg=$(awk 'BEGIN{printf "%.1f", '$ioall' / 3}')
+            echo " I/O Speed(average) : $(_yellow "$ioavg MB/s")"
+        else
+            echo " $(_red "Not enough space for I/O Speed test!")"
+        fi
+}
+
 #二级菜单
 #软件
 software() {
     menutop
 
-    echo "1:update apt  (升级源)    2: 安装常用软件     3.安装xray八合一    4. 安装x-ui              "
-
-    echo ""
-    next
-    _red "5:卸载nginx    6: 卸载Apache     7. 卸载php    8. 卸载docker    9:卸载v2ray         "
-    echo ""
+    echo "1:更新源            2: 安装常用软件   "
+    
     next
 
-    _red "10:卸载mysql       "
+    echo "3.安装xray八合一    4. 安装x-ui  "
+    next
+    echo ""
+    _red "5:卸载nginx        6: 卸载Apache    "
+    echo ""
+    next
+    _red "7. 卸载php         8. 卸载docker "
+    echo ""
+    next
+
+    _red "9:卸载v2ray        10:卸载mysql  "
     echo ""
 
     menubottom
 
     case $number in
-    0) #退出#
+    0)
         exit
         ;;
     1)
@@ -1142,15 +1147,15 @@ networktools() {
     _red "1:配置本地静态ip    2:启用dhcp动态获取"
     echo
     next
-    echo "3:网络信息      4.网络测速 (外网speednet)  "
+    echo "3:网络信息         4.网络测速 (外网speednet)  "
     next
-    echo "5:路由表        6:查看监听端口     "
+    echo "5:路由表          6:查看监听端口     "
     next
     echo "7. Speedtest CLI 外网测速 "
     menubottom
 
     case $number in
-    0) #退出#
+    0)
         exit
         ;;
     1)
@@ -1200,64 +1205,58 @@ networktools() {
 #ufw防火墙&安全
 ufwsafe() {
     menutop
-    echo "1:开启防火墙-ufw          2:关闭防火墙-ufw           "
+    echo "1:开启防火墙-ufw           2:关闭防火墙-ufw   "
     next
-    echo "4:查看防火墙-ufw状态      5: 添加-ufw允许端口      6:关闭-ufw端口     "
+    echo "4:查看防火墙-ufw状态       5: 添加-ufw允许端口  "
     next
-    echo "7:检查并安装配置fail2ban  8: fail2ban状态         9:查看是否有ssh爆破记录     "
+    echo "6:关闭-ufw端口            7:检查并安装配置fail2ban "
+    next
+    echo "8: fail2ban状态           9:查看是否有ssh爆破记录  "
     next
     echo "10:查出每个IP地址连接数       "
+    
     menubottom
     case $number in
-    0) #退出#
+    0)
         exit
         ;;
     1)
         ufwinstall
-        waitinput
-        ./init.sh 3
+        
 
         ;;
     2)
         ufwdel
-        waitinput
-        ./init.sh 3
+        
         ;;
 
     4)
         ufwstatus
-        waitinput
-        ./init.sh 3
+        
         ;;
     5)
         ufwadd
-        waitinput
-        ./init.sh 3
+        
         ;;
     6)
         ufwclose
-        waitinput
-        ./init.sh 3
+        
         ;;
     7)
         installfail2ban
-        waitinput
-        ./init.sh 3
+        
         ;;
     8)
         fail2ban-client status sshd
-        waitinput
-        ./init.sh 3
+        
         ;;
     9)
         lastb | grep root | awk '{print $3}' | sort | uniq
-        waitinput
-        ./init.sh 3
+        
         ;;
     10)
         netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
-        waitinput
-        ./init.sh 3
+        
         ;;
     99)
         ./init.sh
@@ -1268,31 +1267,38 @@ ufwsafe() {
         ;;
     esac
 
+    waitinput
+    ./init.sh 3
+
 }
 #系统
 sysset() {
 
     menutop
-    echo "1:换阿里源    2:同步时间      3:support Chinese 中文显示"
+    echo "1:换阿里源    2:同步时间      3:命令行中文支持"
     next
     echo "4:密码秘钥root登录         5. 秘钥root登录   "
     next
     echo "6.生成ssh公钥             7.写入ssh公钥    "
     next
-    echo "8.查看本机authorized_keys                  "
+    echo "8.查看本机authorized_keys     "
     next
+    echo ''
     echo "9:系统信息                10:磁盘信息     "
     next
     echo "11:计划任务crontab        12:开机启动的服务"
     next
-    echo "13:系统检查            14:cpu压力测试"
+    echo "13:系统检查            14:cpu压力测试  "
+    next
+    echo "15:磁盘测速              "
     menubottom
 
     case $number in
-    0) #退出#
+    0)
         exit
         ;;
     1)
+        menuname='主页/系统/换阿里源'
         huanyuanfun
         ;;
     2)
@@ -1351,6 +1357,9 @@ sysset() {
     14)
         cputest
         ;;
+    15)
+        iotestspeed
+        ;;
     99)
         ./init.sh
         ;;
@@ -1369,14 +1378,17 @@ dockermain() {
     next
     echo "3:查看正在运行的容器     4: 查看所有的容器"
     next
-    echo "5:后台运行一个容器       6:运行一个终端交互容器       8: 进入交互式容器"
+    echo "5:后台运行一个容器       6:运行一个终端交互容器       "
     next
-    echo "9:开启一个容器           10:停止一个容器             11:删除一个容器         "
+    echo "8: 进入交互式容器       9:开启一个容器    "
+    next
+    echo "10:停止一个容器         11:删除一个容器"
+    
 
     menubottom
 
     case $number in
-    0) #退出#
+    0)
         exit
         ;;
     1)
@@ -1440,7 +1452,7 @@ dockermain() {
     esac
 
 }
-
+clear
 #主菜单 main 主程序开始
 number="$1"
 
@@ -1452,16 +1464,16 @@ if [[ "$number" = "" ]]; then
     next
     echo "4:系统      5:docker   "
     next
-    echo "66:脚本升级 "
+    echo "666:脚本升级 "
     next
     echo "0: exit 退出"
     echo ""
 
-    read -p "Please enter the command number 请输入命令数字: " number
+    read -p "请输入命令数字: " number
 fi
 
 case $number in
-0) #退出#
+0)
     exit
     ;;
 1)
@@ -1485,7 +1497,7 @@ case $number in
     dockermain
     ;;
 
-66)
+666)
     wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
     ;;
 *)
