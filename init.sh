@@ -4,7 +4,7 @@
 export LANG=en_US.UTF-8
 #定义全局变量：
 datevar=$(date)
-version='23.5.23.2'
+version='23.5.26'
 #菜单名称(默认主页)
 menuname='主页'
 
@@ -31,6 +31,7 @@ _blue() {
 }
 
 waitinput() {
+    echo ''
     read -n1 -r -p "按任意键继续...(退出 Ctrl+C)"
 }
 
@@ -599,8 +600,6 @@ sysinfo() {
     ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
     echo ""
 
-    
-
 }
 
 diskinfo() {
@@ -1030,35 +1029,55 @@ cputest() {
 
 }
 
-iotestspeed(){
+iotestspeed() {
 
-        _blue "正在进行磁盘测速..."
-        echo ''
+    _blue "正在进行磁盘测速..."
+    echo ''
 
-        freespace=$(df -m . | awk 'NR==2 {print $4}')
-        if [ -z "${freespace}" ]; then
-            freespace=$(df -m . | awk 'NR==3 {print $3}')
-        fi
-        if [ ${freespace} -gt 1024 ]; then
+    freespace=$(df -m . | awk 'NR==2 {print $4}')
+    if [ -z "${freespace}" ]; then
+        freespace=$(df -m . | awk 'NR==3 {print $3}')
+    fi
+    if [ ${freespace} -gt 1024 ]; then
 
-            io1=$(io_test 2048)
-            echo " I/O Speed(1st run) : $(_yellow "$io1")"
-            io2=$(io_test 2048)
-            echo " I/O Speed(2nd run) : $(_yellow "$io2")"
-            io3=$(io_test 2048)
-            echo " I/O Speed(3rd run) : $(_yellow "$io3")"
-            ioraw1=$(echo $io1 | awk 'NR==1 {print $1}')
-            [ "$(echo $io1 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw1=$(awk 'BEGIN{print '$ioraw1' * 1024}')
-            ioraw2=$(echo $io2 | awk 'NR==1 {print $1}')
-            [ "$(echo $io2 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw2=$(awk 'BEGIN{print '$ioraw2' * 1024}')
-            ioraw3=$(echo $io3 | awk 'NR==1 {print $1}')
-            [ "$(echo $io3 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw3=$(awk 'BEGIN{print '$ioraw3' * 1024}')
-            ioall=$(awk 'BEGIN{print '$ioraw1' + '$ioraw2' + '$ioraw3'}')
-            ioavg=$(awk 'BEGIN{printf "%.1f", '$ioall' / 3}')
-            echo " I/O Speed(average) : $(_yellow "$ioavg MB/s")"
-        else
-            echo " $(_red "Not enough space for I/O Speed test!")"
-        fi
+        io1=$(io_test 2048)
+        echo " I/O Speed(1st run) : $(_yellow "$io1")"
+        io2=$(io_test 2048)
+        echo " I/O Speed(2nd run) : $(_yellow "$io2")"
+        io3=$(io_test 2048)
+        echo " I/O Speed(3rd run) : $(_yellow "$io3")"
+        ioraw1=$(echo $io1 | awk 'NR==1 {print $1}')
+        [ "$(echo $io1 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw1=$(awk 'BEGIN{print '$ioraw1' * 1024}')
+        ioraw2=$(echo $io2 | awk 'NR==1 {print $1}')
+        [ "$(echo $io2 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw2=$(awk 'BEGIN{print '$ioraw2' * 1024}')
+        ioraw3=$(echo $io3 | awk 'NR==1 {print $1}')
+        [ "$(echo $io3 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw3=$(awk 'BEGIN{print '$ioraw3' * 1024}')
+        ioall=$(awk 'BEGIN{print '$ioraw1' + '$ioraw2' + '$ioraw3'}')
+        ioavg=$(awk 'BEGIN{printf "%.1f", '$ioall' / 3}')
+        echo " I/O Speed(average) : $(_yellow "$ioavg MB/s")"
+    else
+        echo " $(_red "Not enough space for I/O Speed test!")"
+    fi
+}
+
+countfileslines() {
+
+    echo ''
+    _yellow '目前仅支持单一文件后缀搜索！'
+    read -p "请输入绝对路径 ./(默认当前目录) /.../..  : " abpath
+    if [[ "$abpath" = "" ]]; then
+        abpath='./'
+    fi
+    read -p "请输入要搜索的文件后缀: sh(默认) php  html ...  : " suffix
+    if [[ "$suffix" = "" ]]; then
+        suffix='sh'
+    fi
+
+    # 使用 find 命令递归地查找指定目录下的所有文件，并执行计算行数的命令
+    total=$(find $abpath -type f -name "*.$suffix" -exec wc -l {} \; | awk '{total += $1} END{print total}')
+    # 输出总行数
+    echo "$abpath 目录下的 后缀为 $suffix 文件的总行数是: $total"
+
 }
 
 #二级菜单
@@ -1067,7 +1086,7 @@ software() {
     menutop
 
     echo "1:更新源            2: 安装常用软件   "
-    
+
     next
 
     echo "3.安装xray八合一    4. 安装x-ui  "
@@ -1214,7 +1233,7 @@ ufwsafe() {
     echo "8: fail2ban状态           9:查看是否有ssh爆破记录  "
     next
     echo "10:查出每个IP地址连接数       "
-    
+
     menubottom
     case $number in
     0)
@@ -1222,41 +1241,40 @@ ufwsafe() {
         ;;
     1)
         ufwinstall
-        
 
         ;;
     2)
         ufwdel
-        
+
         ;;
 
     4)
         ufwstatus
-        
+
         ;;
     5)
         ufwadd
-        
+
         ;;
     6)
         ufwclose
-        
+
         ;;
     7)
         installfail2ban
-        
+
         ;;
     8)
         fail2ban-client status sshd
-        
+
         ;;
     9)
         lastb | grep root | awk '{print $3}' | sort | uniq
-        
+
         ;;
     10)
         netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
-        
+
         ;;
     99)
         ./init.sh
@@ -1378,12 +1396,11 @@ dockermain() {
     next
     echo "3:查看正在运行的容器     4: 查看所有的容器"
     next
-    echo "5:后台运行一个容器       6:运行一个终端交互容器       "
+    echo "5:后台运行一个容器       6:运行一个终端交互容器 "
     next
     echo "8: 进入交互式容器       9:开启一个容器    "
     next
     echo "10:停止一个容器         11:删除一个容器"
-    
 
     menubottom
 
@@ -1397,51 +1414,40 @@ dockermain() {
     2)
 
         docker images
-        waitinput
-        ./init.sh 5
+        
         ;;
     3)
         docker ps
-        waitinput
-        ./init.sh 5
+        
         ;;
     4)
         docker ps -a
-        waitinput
-        ./init.sh 5
+        
         ;;
     5)
         dockerrund
-        waitinput
-        ./init.sh 5
+        
         ;;
     6)
         dockerrunit
-        waitinput
-        ./init.sh 5
+        
         ;;
-    7) ;;
 
     8)
         dockerexec
         ;;
     9)
         opencon
-        waitinput
-        ./init.sh 5
+        
         ;;
     10)
         stopcon
-        waitinput
-        ./init.sh 5
+        
         ;;
     11)
         rmcon
-        waitinput
-        ./init.sh 5
+        
         ;;
-    12) ;;
-
     99)
         ./init.sh
         ;;
@@ -1451,6 +1457,35 @@ dockermain() {
         ;;
     esac
 
+    waitinput
+    ./init.sh 5
+
+}
+#其他工具
+ordertools() {
+    menutop
+    echo "1:统计目录文件行数"
+
+    menubottom
+    case $number in
+    0)
+        exit
+        ;;
+    1)
+
+        countfileslines
+        ;;
+    99)
+        ./init.sh
+        ;;
+    *)
+        inputerror
+
+        ;;
+    esac
+
+    waitinput
+        ./init.sh 6
 }
 clear
 #主菜单 main 主程序开始
@@ -1462,7 +1497,7 @@ if [[ "$number" = "" ]]; then
 
     echo "1:软件      2:网络     3:ufw防火墙&安全"
     next
-    echo "4:系统      5:docker   "
+    echo "4:系统      5:docker   6:其他工具"
     next
     echo "666:脚本升级 "
     next
@@ -1495,6 +1530,10 @@ case $number in
 5)
     menuname='主页/docker'
     dockermain
+    ;;
+6)
+    menuname='主页/其他工具'
+    ordertools
     ;;
 
 666)
