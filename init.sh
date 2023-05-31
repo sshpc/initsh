@@ -4,30 +4,36 @@
 export LANG=en_US.UTF-8
 #定义全局变量：
 datevar=$(date)
-version='23.5.26'
+
+version='23.5.31'
+
 #菜单名称(默认主页)
 menuname='主页'
 
 #分割线
 next() {
-    printf "%-70s\n" "-" | sed 's/\s/-/g'
+    printf "%-60s\n" "-" | sed 's/\s/-/g'
 }
 
 #终端字体颜色定义
 _red() {
     printf '\033[0;31;31m%b\033[0m' "$1"
+    echo ''
 }
 
 _green() {
     printf '\033[0;31;32m%b\033[0m' "$1"
+    echo ''
 }
 
 _yellow() {
     printf '\033[0;31;33m%b\033[0m' "$1"
+    echo ''
 }
 
 _blue() {
     printf '\033[0;31;36m%b\033[0m' "$1"
+    echo ''
 }
 
 waitinput() {
@@ -44,15 +50,19 @@ aptupdatefun() {
 
 #菜单头部
 menutop() {
+    which init.sh
+    if [ $? == 0 ]; then
     clear
+    fi
+    
 
     echo ""
     _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v$version"
-    echo ""
+    
     echo ""
     _yellow "当前菜单: $menuname "
     echo ""
-    echo ""
+    
     next
 }
 
@@ -63,7 +73,7 @@ menubottom() {
     echo ""
     _blue "0: 退出    99: 返回主页"
     echo ""
-    echo ""
+    
 
     read -p "请输入命令数字: " number
 }
@@ -1080,6 +1090,68 @@ countfileslines() {
 
 }
 
+
+#安装脚本
+meinstall(){
+
+_green '# Ubuntu初始化&工具脚本'
+_green '# Author:SSHPC <https://github.com/sshpc>'
+echo ''
+
+echo '  ________       '
+echo ' |\   ____\      '
+echo ' \ \  \___|_     '
+echo '  \ \_____  \    '
+echo '   \|____|\  \   '
+echo '     ____\_\  \  '
+echo '    |\_________\ '
+echo '    \|_________| '
+
+echo ''
+
+menutop
+
+echo ''
+_blue "欢迎使用！"
+echo ''
+
+read -n1 -r -p "开始安装脚本 (按任意键继续) ..."
+    
+    sleep 1
+    _yellow '检查系统环境..'
+    sleep 1
+
+    which s
+    if [ $? == 1 ]; then
+    _blue '开始安装脚本'
+    sleep 1
+
+        cp -f "$(pwd)/init.sh" /bin/init.sh
+        ln -s /bin/init.sh /bin/s
+    _blue '安装完成'
+    echo ''
+    _blue "你可以在任意位置使用命令 's' 运行"
+    echo ''
+    waitinput
+    else
+        _red '系统已存在s命令，无法安装，请检查！'
+        
+        exit
+    fi
+   
+
+}
+
+meuninstall(){
+    menutop
+    _blue '开始卸载脚本'
+    rm -rf /bin/init.sh
+    rm -rf /bin/s
+    sleep 1
+    _blue '卸载完成'
+    
+}
+
 #二级菜单
 #软件
 software() {
@@ -1111,13 +1183,13 @@ software() {
     1)
         aptupdatefun
         waitinput
-        ./init.sh 1
+        s 1
 
         ;;
     2)
         installbase
         waitinput
-        ./init.sh 1
+        s 1
 
         ;;
     3)
@@ -1150,7 +1222,7 @@ software() {
         removemysql
         ;;
     99)
-        ./init.sh
+        s
         ;;
     *)
         inputerror
@@ -1186,7 +1258,7 @@ networktools() {
     3)
         netinfo
         waitinput
-        ./init.sh 2
+        s 2
         ;;
     4)
         netfast
@@ -1195,24 +1267,24 @@ networktools() {
     5)
         route -n
         waitinput
-        ./init.sh 2
+        s 2
         ;;
 
     6)
         netstat -tunlp
         waitinput
-        ./init.sh 2
+        s 2
         ;;
 
     7)
         curl -fsSL git.io/speedtest-cli.sh | sudo bash
         speedtest
         waitinput
-        ./init.sh 2
+        s 2
         ;;
 
     99)
-        ./init.sh
+        s
         ;;
     *)
         inputerror
@@ -1277,7 +1349,7 @@ ufwsafe() {
 
         ;;
     99)
-        ./init.sh
+        s
         ;;
     *)
         inputerror
@@ -1286,7 +1358,7 @@ ufwsafe() {
     esac
 
     waitinput
-    ./init.sh 3
+    s 3
 
 }
 #系统
@@ -1340,14 +1412,14 @@ sysset() {
 
         sshsetpub
 
-        ./init.sh 4
+        s 4
         waitinput
         ;;
     8)
 
         cat /root/.ssh/authorized_keys
         waitinput
-        ./init.sh 4
+        s 4
         ;;
 
     9)
@@ -1357,13 +1429,13 @@ sysset() {
     10)
         diskinfo
         waitinput
-        ./init.sh 4
+        s 4
         ;;
     11)
         crontab -e
         service cron reload
         waitinput
-        ./init.sh 4
+        s 4
         ;;
 
     12)
@@ -1379,7 +1451,7 @@ sysset() {
         iotestspeed
         ;;
     99)
-        ./init.sh
+        s
         ;;
     *)
         inputerror
@@ -1449,7 +1521,7 @@ dockermain() {
         
         ;;
     99)
-        ./init.sh
+        s
         ;;
     *)
         inputerror
@@ -1458,7 +1530,7 @@ dockermain() {
     esac
 
     waitinput
-    ./init.sh 5
+    s 5
 
 }
 #其他工具
@@ -1476,7 +1548,7 @@ ordertools() {
         countfileslines
         ;;
     99)
-        ./init.sh
+        s
         ;;
     *)
         inputerror
@@ -1485,9 +1557,18 @@ ordertools() {
     esac
 
     waitinput
-        ./init.sh 6
+        s 6
 }
+
 clear
+#检查脚本是否已安装
+which init.sh
+    if [ $? == 1 ]; then
+    menuname='开箱页面'
+        meinstall
+    fi
+
+
 #主菜单 main 主程序开始
 number="$1"
 
@@ -1499,7 +1580,7 @@ if [[ "$number" = "" ]]; then
     next
     echo "4:系统      5:docker   6:其他工具"
     next
-    echo "666:脚本升级 "
+    echo "666:脚本升级   777:脚本卸载"
     next
     echo "0: exit 退出"
     echo ""
@@ -1538,7 +1619,13 @@ case $number in
 
 666)
     wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
+    meinstall
     ;;
+    777)
+    menuname='脚本卸载'
+    meuninstall
+    ;;
+
 *)
     inputerror
 
