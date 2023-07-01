@@ -3,19 +3,19 @@ export LANG=en_US.UTF-8
 #字体颜色定义
 _red() {
     printf '\033[0;31;31m%b\033[0m' "$1"
-    echo ''
+    echo
 }
 _green() {
     printf '\033[0;31;32m%b\033[0m' "$1"
-    echo ''
+    echo
 }
 _yellow() {
     printf '\033[0;31;33m%b\033[0m' "$1"
-    echo ''
+    echo
 }
 _blue() {
     printf '\033[0;31;36m%b\033[0m' "$1"
-    echo ''
+    echo
 }
 #介绍
 sinfo() {
@@ -34,41 +34,43 @@ next() {
 }
 #等待
 waitinput() {
-    echo ''
+    echo
     read -n1 -r -p "按任意键继续...(退出 Ctrl+C)"
 }
 #菜单头部
 menutop() {
-    which init.sh
+    which init.sh > /dev/null 2>&1
     if [ $? == 0 ]; then
         clear
     fi
-    echo ""
+    sinfo
+    echo
     _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v$version"
-    echo ""
+    echo
     _yellow "当前菜单: $menuname "
-    echo ""
+    echo
 }
 #二级菜单底部
 menubottom() {
+    echo
     next
-    echo ""
+    echo
     _blue "0: 退出    99: 返回主页"
-    echo ""
+    echo
     read -p "请输入命令数字: " number
 }
 #输入有误
 inputerror() {
-    echo ""
+    echo
     _yellow '>~~~~~~~~~~~~~~~输入有误,脚本终止~~~~~~~~~~~~~~~~~<'
-    echo ""
+    echo
     exit
 }
 #安装脚本
-meinstall() {
+selfinstall() {
     sinfo
     menutop
-    echo ''
+    echo
     _blue '  ________       '
     _blue ' |\   ____\      '
     _blue ' \ \  \___|_     '
@@ -77,11 +79,11 @@ meinstall() {
     _blue '     ____\_\  \  '
     _blue '    |\_________\ '
     _blue '    \|_________| '
-    echo ''
-    echo ''
+    echo
+    echo
     _blue "welcome !"
-    echo ''
-    echo ''
+    echo
+    echo
     read -n1 -r -p "脚本安装 (按任意键继续) ..."
     _yellow '检查系统环境..'
     which s
@@ -91,49 +93,51 @@ meinstall() {
         ln -s /bin/init.sh /bin/s
         _blue '安装完成'
         menuname='主页'
-        echo ''
+        echo
         _blue "你可以在任意位置使用命令 's' 运行"
-        echo ''
+        echo
         waitinput
     else
         _red '系统已存在s程序,停止安装,请检查!'
         exit
     fi
 }
-meuninstall() {
-    menutop
+selfuninstall() {
     _blue '开始卸载脚本'
     rm -rf /bin/init.sh
     rm -rf /bin/s
     _blue '卸载完成'
 }
+#脚本升级
 updateself(){
-    rm /bin/init.sh
-    rm /bin/s
+    selfuninstall
+    _blue '拉取最新版'
     wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
 }
-#apt更新
+#更新所有已安装的软件包
 aptupdatefun() {
-    echo "检查更新"
+    echo "更新所有已安装的软件包"
     apt-get update -y && apt-get install curl -y
     echo "更新完成"
 }
 #开始卸载
 uninstallstart() {
-    echo ""
+    echo
     _red "开始卸载 $1"
     echo "服务关闭"
     service $1 stop
     systemctl stop $1
+    echo
 }
 #结束卸载
 uninstallend() {
     next
+    echo
     echo "卸载完成"
-    echo ""
+    echo
 }
 #安装常用包
-installbase() {
+installcomso() {
     echo "开始异步安装.."
     install_package() {
         package_name=$1
@@ -165,7 +169,7 @@ removephp() {
     apt-get --purge remove php -y
     apt-get --purge remove php-* -y
     apt-get autoremove php -y
-    echo ""
+    echo
     echo "删除所有包含php的文件"
     rm -rf /etc/php
     rm -rf /etc/init.d/php
@@ -180,7 +184,7 @@ removenginx() {
     apt-get --purge remove nginx -y
     apt-get --purge remove nginx-common -y
     apt-get --purge remove nginx-core -y
-    echo ""
+    echo
     echo "删除所有包含nginx的文件"
     find / -name nginx* -print0 | xargs -0 rm -rf
     uninstallend
@@ -192,7 +196,7 @@ removeapache() {
     apt-get --purge remove apache2-common -y
     apt-get --purge remove apache2-utils -y
     apt-get autoremove apache2
-    echo ""
+    echo
     echo "删除所有包含apache的文件"
     rm -rf /etc/apache2
     rm -rf /etc/init.d/apache2
@@ -300,7 +304,7 @@ installfail2ban() {
     echo "bantime  = $timeban" >>/etc/fail2ban/jail.d/sshd.local
     service fail2ban start
     echo "服务已开启"
-    echo ""
+    echo
     echo "----服务状态----"
     fail2ban-client status sshd
 }
@@ -413,32 +417,36 @@ sshpubonly() {
     service sshd restart
     echo "ok"
 }
+#tty中文支持
 supportcn() {
-    echo ""
+    echo
     apt-get install zhcon -y
     adduser $(whoami) video
     zhcon --utf8
-    echo ""
+    echo
     echo "Please enter 'zhcon --utf8' "
 }
+#生成ssh密钥对
 sshgetpub() {
     echo "输完3次回车"
     read -p "请输入email: " email
     ssh-keygen -t ed25519 -C "$email"
-    echo ""
+    echo
     echo "ssh秘钥钥生成成功"
-    echo ""
+    echo
     echo "公钥："
     cat ~/.ssh/id_ed25519.pub
 }
+#写入其他ssh公钥
 sshsetpub() {
     echo "请填入ssh公钥"
     read -p "请粘贴至命令行回车: " sshpub
     echo -e $sshpub >>/root/.ssh/authorized_keys
-    echo ""
+    echo
     echo "ssh公钥写入成功"
-    echo ""
+    echo
 }
+#系统信息
 sysinfo() {
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>系统基本信息<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     hostname=$(uname -n)
@@ -486,7 +494,7 @@ sysinfo() {
     last | head -n 30
     echo "系统中关键文件修改时间:"
     ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
-    echo ""
+    echo
 }
 diskinfo() {
     echo "\n分区信息:"
@@ -506,8 +514,9 @@ diskinfo() {
     echo -e "ubuntu general \n # resize2fs -p -F /dev/mapper/ubuntu--vg-ubuntu--lv"
     echo "文件系统信息:"
     more /etc/fstab | grep -v "^#" | grep -v "^$"
-    echo " "
+    echo
 }
+#
 staticip() {
     echo "确保原文件手工备份"
     waitinput
@@ -536,13 +545,13 @@ staticip() {
         read -p "请输入网关: " gateway
     done
     echo "网关为:$gateway"
-    echo "提示:x.x.x.x  备用DNS已固定为114.114.114.114"
+    echo "提示:x.x.x.x"
     read -p "请输入主DNS: " nameservers
     until [[ "$nameservers" ]]; do
         echo "$nameservers: DNS不能为空."
         read -p "请输入主DNS: " nameservers
     done
-    echo "DNS地址为:$nameservers 114.114.114.114"
+    echo "DNS地址为:$nameservers "
     cat <<EOM >/etc/netplan/00-installer-config.yaml
 # This is the network config written by 'subiquity'
 network:
@@ -553,9 +562,9 @@ network:
          addresses: [$ipaddresses]
          gateway4: $gateway
          nameservers:
-             addresses: [$nameservers,114.114.114.114]
+             addresses: [$nameservers]
 EOM
-    echo "配置信息成功写入,成功切换ip 、ssh已断开,请使用设置的ip重新登录"
+    echo "配置信息成功写入,成功切换ip 、ssh已断开,请使用设置的ip:$ipaddresses 重新登录"
     netplan apply
     echo "配置已应用"
 }
@@ -581,26 +590,26 @@ EOM
     echo "DHCP已开启"
 }
 netinfo() {
-    echo ""
+    echo
     echo "---------本地IP信息-------------"
     ifconfig -a
     echo "---------公网ip信息-----------------"
     curl cip.cc
-    echo ""
+    echo
 }
 netfast() {
-    echo ""
+    echo
     echo "检查安装测速工具"
     apt install speedtest-cli -y
     echo "开始测速"
     speedtest-cli
     echo "测速完成"
-    echo ""
+    echo
 }
 dockerrund() {
-    echo " "
+    echo
     docker images
-    echo ""
+    echo
     read -p "请输入镜像包名或idREPOSITORY: " dcimage
     read -p "请输入容器端口: " conport
     read -p "请输入宿主机端口: " muport
@@ -609,9 +618,9 @@ dockerrund() {
     echo "$dcimage 已在后台运行中"
 }
 dockerrunit() {
-    echo " "
+    echo
     docker images
-    echo ""
+    echo
     read -p "请输入镜像包名或idREPOSITORY: " dcimage
     read -p "请输入容器端口: " conport
     read -p "请输入宿主机端口: " muport
@@ -623,9 +632,9 @@ dockerrunit() {
     echo "$dcimage 后台运行中"
 }
 dockerexec() {
-    echo " "
+    echo
     docker ps
-    echo ""
+    echo
     read -p "请输入容器名或id: " containerd
     read -p "请输入执行参数(默认/bin/bash): " param
     if [[ "$param" = "" ]]; then
@@ -634,28 +643,28 @@ dockerexec() {
     docker exec -it $containerd $param
 }
 opencon() {
-    echo " "
+    echo
     docker ps -a
-    echo ""
+    echo
     read -p "请输入容器名或id: " containerd
     docker start $containerd
-    echo ""
+    echo
     echo "正在运行的容器 "
     docker ps
 }
 stopcon() {
-    echo " "
+    echo
     docker ps
-    echo ""
+    echo
     read -p "请输入容器名或id: " containerd
     docker stop $containerd
     echo "正在运行的容器 "
     docker ps
 }
 rmcon() {
-    echo " "
+    echo
     docker ps -a
-    echo ""
+    echo
     read -p "请输入容器名或id: " containerd
     docker rm -f $containerd
     echo "所有容器 "
@@ -687,7 +696,7 @@ systemcheck() {
     next
     echo "开机启动的服务:"
     systemctl list-unit-files | grep enabled
-    echo " "
+    echo
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>系统用户情况<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     echo "活动用户:"
     w | tail -n +2
@@ -697,7 +706,7 @@ systemcheck() {
     next
     echo "系统所有组:"
     cut -d: -f1,2,3 /etc/group
-    echo " "
+    echo
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>身份鉴别安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     more /etc/login.defs | grep -E "PASS_MAX_DAYS" | grep -v "#" | awk -F' ' '{if($2!=90){print ">>>密码过期天数是"$2"天,请管理员改成90天------warning"}}'
     next
@@ -707,7 +716,7 @@ systemcheck() {
     else
         echo ">>>登入失败处理:未开启,请加固登入失败锁定功能----------warning"
     fi
-    echo " "
+    echo
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>访问控制安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     echo "系统中存在以下非系统默认用户:"
     more /etc/passwd | awk -F ":" '{if($3>500){print ">>>/etc/passwd里面的"$1 "的UID为"$3",该账户非系统默认账户,请管理员确认是否为可疑账户--------warning"}}'
@@ -717,7 +726,7 @@ systemcheck() {
     next
     echo "系统中空口令账户:"
     awk -F: '($2=="!!") {print $1"该账户为空口令账户,请管理员确认是否为新增账户,如果为新建账户,请配置密码-------warning"}' /etc/shadow
-    echo " "
+    echo
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>安全审计<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     echo "正常情况下登录到本机30天内的所有用户的历史记录:"
     last | head -n 30
@@ -798,7 +807,7 @@ systemcheck() {
     else
         more /var/log/secure | awk '/Failed/{print $(NF-3)}' | sort | uniq -c | awk '{print ">>>登入失败的IP和尝试次数: "$2"="$1"次---------warning";}'
     fi
-    echo " "
+    echo
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>资源控制安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     echo "查看是否开启了ssh服务:"
     if service sshd status | grep -E "listening on|active \(running\)"; then
@@ -816,7 +825,7 @@ systemcheck() {
     next
     ps axu | grep iptables | grep -v grep || ps axu | grep firewalld | grep -v grep
     if [ $? == 0 ]; then
-        echo ">>>防火墙已启用"
+        echo ">>>防火墙已启用--------ok"
         iptables -nvL --line-numbers
     else
         echo ">>>防火墙未启用--------warning"
@@ -849,7 +858,7 @@ iotestspeed() {
         (LANG=C dd if=/dev/zero of=benchtest_$$ bs=512k count=$1 conv=fdatasync && rm -f benchtest_$$) 2>&1 | awk -F, '{io=$NF} END { print io}' | sed 's/^[ \t]*//;s/[ \t]*$//'
     }
     _blue "正在进行磁盘测速..."
-    echo ''
+    echo
     freespace=$(df -m . | awk 'NR==2 {print $4}')
     if [ -z "${freespace}" ]; then
         freespace=$(df -m . | awk 'NR==3 {print $3}')
@@ -875,7 +884,7 @@ iotestspeed() {
     fi
 }
 countfileslines() {
-    echo ''
+    echo
     _yellow '目前仅支持单一文件后缀搜索!'
     read -p "请输入绝对路径 ./(默认当前目录) /.../..  : " abpath
     if [[ "$abpath" = "" ]]; then
@@ -894,20 +903,17 @@ countfileslines() {
 #软件
 software() {
     menutop
-    next
-    echo "1:更新源            2: 安装常用软件   "
-    next
-    echo "3.安装xray八合一    4. 安装x-ui  "
-    next
-    echo ""
-    _red "5:卸载nginx        6: 卸载Apache    "
-    echo ""
-    next
-    _red "7. 卸载php         8. 卸载docker "
-    echo ""
-    next
+    echo
+    echo "1:更新源            2:安装常用软件   "
+    echo
+    echo "3:安装xray八合一    4:安装x-ui  "
+    echo
+    _red "5:卸载nginx        6:卸载Apache    "
+    echo
+    _red "7:卸载php          8:卸载docker "
+    echo
     _red "9:卸载v2ray        10:卸载mysql  "
-    echo ""
+    echo
     menubottom
     case $number in
     0)
@@ -919,7 +925,7 @@ software() {
         s 1
         ;;
     2)
-        installbase
+        installcomso
         waitinput
         s 1
         ;;
@@ -959,15 +965,24 @@ software() {
 #网络
 networktools() {
     menutop
-    next
-    _red "1:配置本地静态ip    2:启用dhcp动态获取"
     echo
-    next
-    echo "3:网络信息         4.网络测速 (外网speednet)  "
-    next
-    echo "5:路由表          6:查看监听端口     "
-    next
-    echo "7. Speedtest CLI 外网测速 "
+    echo "1:配置本机网卡静态ip    2:启用dhcp动态获取"
+    echo
+    echo "3:网络信息             4.网络测速 (外网speednet)  "
+    echo
+    echo "5:路由表               6:查看监听端口     "
+    echo
+    echo "7:SpeedCLI 外网测速 "
+    echo
+    echo "11:开启ufw             12:关闭ufw   "
+    echo
+    echo "14:ufw状态             15: 添加ufw端口  "
+    echo
+    echo "16:关闭ufw端口         17:配置fail2ban "
+    echo
+    echo "18:fail2ban状态       19:ssh爆破记录  "
+    echo
+    echo "20:各IP地址连接数       "
     menubottom
     case $number in
     0)
@@ -1003,60 +1018,39 @@ networktools() {
         waitinput
         s 2
         ;;
-    99)
-        s
-        ;;
-    *)
-        inputerror
-        ;;
-    esac
-}
-#ufw防火墙&安全
-ufwsafe() {
-    menutop
-    next
-    echo "1:开启防火墙-ufw           2:关闭防火墙-ufw   "
-    next
-    echo "4:查看防火墙-ufw状态       5: 添加-ufw允许端口  "
-    next
-    echo "6:关闭-ufw端口            7:检查并安装配置fail2ban "
-    next
-    echo "8: fail2ban状态           9:查看是否有ssh爆破记录  "
-    next
-    echo "10:查出每个IP地址连接数       "
-    menubottom
-    case $number in
-    0)
-        exit
-        ;;
-    1)
+    11)
         ufwinstall
         ;;
-    2)
+    12)
         ufw disable
         echo "ufw已关闭"
         ufwstatus
         ;;
-    4)
+    14)
         ufwstatus
         ;;
-    5)
+    15)
         ufwadd
         ;;
-    6)
+    16)
         ufwclose
         ;;
-    7)
+    17)
         installfail2ban
         ;;
-    8)
+    18)
         fail2ban-client status sshd
         ;;
-    9)
+    19)
         lastb | grep root | awk '{print $3}' | sort | uniq
         ;;
-    10)
+    20)
+        echo
+        echo '   数量 ip'
         netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
+        echo
+        waitinput
+        s 2
         ;;
     99)
         s
@@ -1065,28 +1059,27 @@ ufwsafe() {
         inputerror
         ;;
     esac
-    waitinput
-    s 3
 }
+
 #系统
 sysset() {
     menutop
-    next
-    echo "1:换阿里源    2:同步时间      3:命令行中文支持"
-    next
-    echo "4:密码秘钥root登录         5. 秘钥root登录   "
-    next
-    echo "6.生成ssh公钥             7.写入ssh公钥    "
-    next
+    echo
+    echo "1:换阿里源                 2:同步时间             3:命令行中文支持"
+    echo
+    echo "4:密码和密钥root登录       5. 仅密钥root登录(推荐)   "
+    echo
+    echo "6.生成ssh密钥对            7.写入ssh公钥(常用)    "
+    echo
     echo "8.查看本机authorized_keys     "
-    next
-    echo ''
+    echo
+    echo
     echo "9:系统信息                10:磁盘信息     "
-    next
+    echo
     echo "11:计划任务crontab        12:开机启动的服务"
-    next
-    echo "13:系统检查            14:cpu压力测试  "
-    next
+    echo
+    echo "13:系统检查               14:cpu压力测试  "
+    echo
     echo "15:磁盘测速              "
     menubottom
     case $number in
@@ -1115,13 +1108,13 @@ sysset() {
         ;;
     7)
         sshsetpub
-        s 4
+        s 3
         waitinput
         ;;
     8)
         cat /root/.ssh/authorized_keys
         waitinput
-        s 4
+        s 3
         ;;
     9)
         sysinfo
@@ -1129,13 +1122,13 @@ sysset() {
     10)
         diskinfo
         waitinput
-        s 4
+        s 3
         ;;
     11)
         crontab -e
         service cron reload
         waitinput
-        s 4
+        s 3
         ;;
     12)
         systemctl list-unit-files | grep enabled
@@ -1160,15 +1153,15 @@ sysset() {
 #docker
 dockermain() {
     menutop
-    next
+    echo
     echo "1:安装docker            2:查看docker镜像     "
-    next
+    echo
     echo "3:查看正在运行的容器     4: 查看所有的容器"
-    next
+    echo
     echo "5:后台运行一个容器       6:运行一个终端交互容器 "
-    next
+    echo
     echo "8: 进入交互式容器       9:开启一个容器    "
-    next
+    echo
     echo "10:停止一个容器         11:删除一个容器"
     menubottom
     case $number in
@@ -1213,12 +1206,12 @@ dockermain() {
         ;;
     esac
     waitinput
-    s 5
+    s 3
 }
 #其他工具
 ordertools() {
     menutop
-    next
+    echo
     echo "1:统计目录文件行数"
     menubottom
     case $number in
@@ -1240,23 +1233,26 @@ ordertools() {
 }
 clear
 #检查脚本是否已安装(/bin/init.sh存在?)
-which init.sh
+which init.sh > /dev/null 2>&1
 if [ $? == 1 ]; then
     menuname='开箱页面'
-    meinstall
+    selfinstall
 fi
+
 #主菜单 main 主程序开始
 number="$1"
 if [[ "$number" = "" ]]; then
+    
     menutop
-    echo "1:软件      2:网络     3:ufw防火墙&安全"
-    next
-    echo "4:系统      5:docker   6:其他工具"
-    next
+    
+    echo "1:软件         2:网络        3:系统 "
+    echo
+    echo "4:docker       5:其他工具"
+    echo
     echo "666:脚本升级   777:脚本卸载"
-    next
-    echo "0: exit 退出"
-    echo ""
+    echo
+    echo "0: 退出"
+    echo 
     read -p "请输入命令数字: " number
 fi
 case $number in
@@ -1272,18 +1268,14 @@ case $number in
     networktools
     ;;
 3)
-    menuname='主页/防火墙安全'
-    ufwsafe
-    ;;
-4)
     menuname='主页/系统'
     sysset
     ;;
-5)
+4)
     menuname='主页/docker'
     dockermain
     ;;
-6)
+5)
     menuname='主页/其他工具'
     ordertools
     ;;
@@ -1293,7 +1285,7 @@ case $number in
     ;;
 777)
     menuname='脚本卸载'
-    meuninstall
+    selfuninstall
     ;;
 *)
     inputerror
