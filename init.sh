@@ -107,6 +107,11 @@ meuninstall() {
     rm -rf /bin/s
     _blue '卸载完成'
 }
+updateself(){
+    rm /bin/init.sh
+    rm /bin/s
+    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
+}
 #apt更新
 aptupdatefun() {
     echo "检查更新"
@@ -1283,8 +1288,8 @@ case $number in
     ordertools
     ;;
 666)
-    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
-    meinstall
+    updateself
+    
     ;;
 777)
     menuname='脚本卸载'
