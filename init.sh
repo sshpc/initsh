@@ -68,7 +68,6 @@ inputerror() {
 }
 #安装脚本
 selfinstall() {
-    sinfo
     menutop
     echo
     _blue '  ________       '
