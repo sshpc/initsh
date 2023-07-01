@@ -1,69 +1,55 @@
 #!/bin/bash
-# Ubuntu初始化&工具脚本
-# Author:SSHPC <https://github.com/sshpc>
 export LANG=en_US.UTF-8
-#定义全局变量：
-datevar=$(date)
-
-version='23.5.31'
-
-#菜单名称(默认主页)
-menuname='主页'
-
-#分割线
-next() {
-    printf "%-60s\n" "-" | sed 's/\s/-/g'
-}
-
-#终端字体颜色定义
+#字体颜色定义
 _red() {
     printf '\033[0;31;31m%b\033[0m' "$1"
     echo ''
 }
-
 _green() {
     printf '\033[0;31;32m%b\033[0m' "$1"
     echo ''
 }
-
 _yellow() {
     printf '\033[0;31;33m%b\033[0m' "$1"
     echo ''
 }
-
 _blue() {
     printf '\033[0;31;36m%b\033[0m' "$1"
     echo ''
 }
-
+#介绍
+sinfo(){
+    _green '# Ubuntu初始化&工具脚本'
+    _green '# Author:SSHPC <https://github.com/sshpc>'
+}
+#时间变量：
+datevar=$(date)
+#版本
+version='23.7.1'
+#菜单名称(默认主页)
+menuname='主页'
+#分割线
+next() {
+    printf "%-50s\n" "-" | sed 's/\s/-/g'
+}
+#等待
 waitinput() {
     echo ''
     read -n1 -r -p "按任意键继续...(退出 Ctrl+C)"
 }
-
-#apt更新
-aptupdatefun() {
-    echo "检查更新"
-    apt-get update -y && apt-get install curl -y
-    echo "更新完成"
-}
-
 #菜单头部
 menutop() {
     which init.sh
     if [ $? == 0 ]; then
-    clear
+        clear
     fi
-    
 
     echo ""
     _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v$version"
-    
+
     echo ""
     _yellow "当前菜单: $menuname "
     echo ""
-    
-    next
 }
 
 #二级菜单底部
@@ -73,27 +59,90 @@ menubottom() {
     echo ""
     _blue "0: 退出    99: 返回主页"
     echo ""
-    
 
     read -p "请输入命令数字: " number
 }
 #输入有误
 inputerror() {
     echo ""
-    _yellow '>~~~~~~~~~~~~~~输入有误,脚本终止~~~~~~~~~~~~~~~~<'
+    _yellow '>~~~~~~~~~~~~~~~输入有误,脚本终止~~~~~~~~~~~~~~~~~<'
     echo ""
+    exit
 }
-#io测试
-io_test() {
-    (LANG=C dd if=/dev/zero of=benchtest_$$ bs=512k count=$1 conv=fdatasync && rm -f benchtest_$$) 2>&1 | awk -F, '{io=$NF} END { print io}' | sed 's/^[ \t]*//;s/[ \t]*$//'
+
+#安装脚本
+meinstall() {
+    sinfo
+    menutop
+    echo ''
+    _blue '  ________       '
+    _blue ' |\   ____\      '
+    _blue ' \ \  \___|_     '
+    _blue '  \ \_____  \    '
+    _blue '   \|____|\  \   '
+    _blue '     ____\_\  \  '
+    _blue '    |\_________\ '
+    _blue '    \|_________| '
+    echo ''
+    echo ''
+    _blue "welcome !"
+    echo ''
+    echo ''
+    read -n1 -r -p "脚本安装 (按任意键继续) ..."
+    _yellow '检查系统环境..'
+    which s
+    if [ $? == 1 ]; then
+        _blue '开始安装脚本'
+        cp -f "$(pwd)/init.sh" /bin/init.sh
+        ln -s /bin/init.sh /bin/s
+        _blue '安装完成'
+        menuname='主页'
+        echo ''
+        _blue "你可以在任意位置使用命令 's' 运行"
+        echo ''
+        waitinput
+    else
+        _red '系统已存在s程序,停止安装,请检查!'
+        exit
+    fi
+}
+meuninstall() {
+    menutop
+    _blue '开始卸载脚本'
+    rm -rf /bin/init.sh
+    rm -rf /bin/s
+
+    _blue '卸载完成'
+
+}
+#apt更新
+aptupdatefun() {
+    echo "检查更新"
+    apt-get update -y && apt-get install curl -y
+    echo "更新完成"
+}
+#开始卸载
+uninstallstart(){
+    echo ""
+    _red "开始卸载 $1"
+    echo "服务关闭"
+    service $1 stop
+    systemctl stop $1
+
+}
+
+#结束卸载
+uninstallend(){
+
+    next
+    echo "卸载完成"
+    echo ""
 }
 
 #安装常用包
 installbase() {
-
-    aptupdatefun
+    
     echo "开始异步安装.."
-
     install_package() {
         package_name=$1
         echo "开始安装 $package_name"
@@ -124,75 +173,52 @@ installbase() {
 }
 
 removephp() {
-    echo ""
-    next
-    echo "开始卸载php"
+    uninstallstart php
     apt remove php -y
     apt-get --purge remove php -y
 
     apt-get --purge remove php-* -y
     apt-get autoremove php -y
     echo ""
-    next
     echo "删除所有包含php的文件"
     rm -rf /etc/php
     rm -rf /etc/init.d/php
     find /etc -name *php* -print0 | xargs -0 rm -rf
-    next
     echo "清除dept列表"
     apt purge $(dpkg -l | grep php | awk '{print $2}' | tr "\n" " ")
-    next
-    echo ""
-    echo "卸载完成"
-    next
-    echo ""
+    uninstallend
 
 }
 
 removenginx() {
-    echo ""
-    echo "服务关闭"
-    service nginx stop
-    next
-    echo "开始卸载nginx"
+
+    uninstallstart nginx
+    
     apt remove nginx -y
     apt-get --purge remove nginx -y
     apt-get --purge remove nginx-common -y
     apt-get --purge remove nginx-core -y
     echo ""
-    next
     echo "删除所有包含nginx的文件"
 
     find / -name nginx* -print0 | xargs -0 rm -rf
-    echo ""
-    echo "卸载完成"
-    next
-    echo ""
+    uninstallend
 
 }
 
 removeapache() {
-    echo ""
-    echo "服务关闭"
-    service apache2 stop
-    next
-    echo "开始卸载apache"
+    uninstallstart apache2
     apt remove apache2 -y
     apt-get --purge remove apache2 -y
     apt-get --purge remove apache2-common -y
     apt-get --purge remove apache2-utils -y
     apt-get autoremove apache2
     echo ""
-    next
     echo "删除所有包含apache的文件"
     rm -rf /etc/apache2
     rm -rf /etc/init.d/apache2
     find / -name apache2* -print0 | xargs -0 rm -rf
-    echo ""
-    echo "卸载完成"
-    next
-
-    echo ""
+    uninstallend
 
 }
 
@@ -201,10 +227,8 @@ removedocker() {
     docker kill $(docker ps -a -q)
     docker rm $(docker ps -a -q)
     docker rmi $(docker images -q)
-    systemctl stop docker
-    echo "服务关闭"
-    service docker stop
-    next
+    uninstallstart docker
+    
 
     apt-get autoremove docker docker-ce docker-engine docker.io containerd runc
     dpkg -l | grep docker
@@ -216,66 +240,36 @@ removedocker() {
     rm -rf /var/lib/dockershim
     umount /var/lib/docker/devicemapper
 
-    echo ""
-    echo "卸载完成"
-    next
-
-    echo ""
+   uninstallend
 
 }
 
 removev2() {
-
-    systemctl stop v2ray
-
-    systemctl disable v2ray
-
-    service v2ray stop
-
+    uninstallstart v2ray
     update-rc.d -f v2ray remove
-
     rm -rf /etc/v2ray/*
-
     rm -rf /usr/bin/v2ray/*
-
     rm -rf /var/log/v2ray/*
-
     rm -rf /lib/systemd/system/v2ray.service
-
     rm -rf /etc/init.d/v2ray
-    echo "卸载完成"
-    next
-
+    uninstallend
 }
 
 removemysql() {
 
-    echo ""
-    echo "服务关闭"
-    service mysql-server stop
-    next
-    echo "开始卸载mysql"
-    next
+    uninstallstart mysql-server
     apt-get autoremove --purge mysql-server -y
     apt-get remove mysql-common -y
-
     apt-get remove dbconfig-mysql -y
     apt-get remove mysql-client -y
     apt-get remove mysql-client-5.7 -y
     apt-get remove mysql-client-core-5.7 -y
-
     apt-get remove apparmor -y
     apt-get autoremove mysql* --purge -y
     dpkg -l | grep ^rc | awk '{print $2}' | xargs dpkg -P
-
     rm /var/lib/mysql/ -R
     rm /etc/mysql/ -R
-    next
-
-    echo ""
-    echo "卸载完成"
-
-    echo ""
+    uninstallend
 
 }
 
@@ -291,12 +285,6 @@ ufwinstall() {
     echo "已配置关闭所有外部对本机的访问"
     ufwstatus
 
-}
-
-ufwdel() {
-    ufw disable
-    echo "ufw已关闭"
-    ufwstatus
 }
 
 ufwadd() {
@@ -437,19 +425,19 @@ huanyuanfun() {
         a1804
         echo "source list已经写入阿里云源."
 
-        aptupdatefun
+        
         ;;
     2)
         a2004
         echo "source list已经写入阿里云源."
 
-        aptupdatefun
+        
         ;;
     3)
         a2204
         echo "source list已经写入阿里云源."
 
-        aptupdatefun
+        
         ;;
 
     *)
@@ -458,11 +446,12 @@ huanyuanfun() {
         ;;
     esac
 
+
 }
 
 synchronization_time() {
     echo "同步前的时间: $(date -R)"
-    echo "-----》即将同步为上海时间"
+    echo "同步为上海时间?"
     waitinput
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
     timedatectl set-timezone Asia/Shanghai
@@ -755,16 +744,11 @@ dockerrund() {
     docker images
     echo ""
     read -p "请输入镜像包名或idREPOSITORY: " dcimage
-
     read -p "请输入容器端口: " conport
     read -p "请输入宿主机端口: " muport
-
     read -p "请输入执行参数: " param
-
     docker run -d -p $muport:$conport $dcimage $param
-
     echo "$dcimage 已在后台运行中"
-
 }
 
 dockerrunit() {
@@ -772,78 +756,55 @@ dockerrunit() {
     docker images
     echo ""
     read -p "请输入镜像包名或idREPOSITORY: " dcimage
-
     read -p "请输入容器端口: " conport
     read -p "请输入宿主机端口: " muport
-
     read -p "请输入执行参数(默认/bin/bash): " param
-
     if [[ "$param" = "" ]]; then
         param="/bin/bash"
-
     fi
-
     docker run -it -p $muport:$conport $dcimage $param
-
     echo "$dcimage 后台运行中"
-
 }
 
 dockerexec() {
-
     echo " "
     docker ps
     echo ""
-
     read -p "请输入容器名或id: " containerd
     read -p "请输入执行参数(默认/bin/bash): " param
-
     if [[ "$param" = "" ]]; then
         param="/bin/bash"
-
     fi
-
     docker exec -it $containerd $param
-
 }
 
 opencon() {
     echo " "
     docker ps -a
     echo ""
-
     read -p "请输入容器名或id: " containerd
     docker start $containerd
-
     echo ""
     echo "正在运行的容器 "
-
     docker ps
 }
 stopcon() {
     echo " "
     docker ps
     echo ""
-
     read -p "请输入容器名或id: " containerd
     docker stop $containerd
-
     echo "正在运行的容器 "
-
     docker ps
-
 }
 
 rmcon() {
     echo " "
     docker ps -a
     echo ""
-
     read -p "请输入容器名或id: " containerd
     docker rm -f $containerd
-
     echo "所有容器 "
-
     docker ps -a
 }
 systemcheck() {
@@ -853,7 +814,7 @@ systemcheck() {
     if [ $? == 1 ]; then
         echo ">>>无僵尸进程"
     else
-        echo ">>>有僵尸进程------[需调整]"
+        echo ">>>有僵尸进程------warning"
     fi
     next
     echo "耗CPU最多的进程:"
@@ -888,24 +849,24 @@ systemcheck() {
     echo " "
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>身份鉴别安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
 
-    more /etc/login.defs | grep -E "PASS_MAX_DAYS" | grep -v "#" | awk -F' ' '{if($2!=90){print ">>>密码过期天数是"$2"天,请管理员改成90天------[需调整]"}}'
+    more /etc/login.defs | grep -E "PASS_MAX_DAYS" | grep -v "#" | awk -F' ' '{if($2!=90){print ">>>密码过期天数是"$2"天,请管理员改成90天------warning"}}'
     next
     grep -i "^auth.*required.*pam_tally2.so.*$" /etc/pam.d/sshd >/dev/null
     if [ $? == 0 ]; then
         echo ">>>登入失败处理:已开启"
     else
-        echo ">>>登入失败处理:未开启,请加固登入失败锁定功能----------[需调整]"
+        echo ">>>登入失败处理:未开启,请加固登入失败锁定功能----------warning"
     fi
     echo " "
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>访问控制安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     echo "系统中存在以下非系统默认用户:"
-    more /etc/passwd | awk -F ":" '{if($3>500){print ">>>/etc/passwd里面的"$1 "的UID为"$3"，该账户非系统默认账户，请管理员确认是否为可疑账户--------[需调整]"}}'
+    more /etc/passwd | awk -F ":" '{if($3>500){print ">>>/etc/passwd里面的"$1 "的UID为"$3",该账户非系统默认账户,请管理员确认是否为可疑账户--------warning"}}'
     next
     echo "系统特权用户:"
     awk -F: '$3==0 {print $1}' /etc/passwd
     next
     echo "系统中空口令账户:"
-    awk -F: '($2=="!!") {print $1"该账户为空口令账户，请管理员确认是否为新增账户，如果为新建账户，请配置密码-------[需调整]"}' /etc/shadow
+    awk -F: '($2=="!!") {print $1"该账户为空口令账户,请管理员确认是否为新增账户,如果为新建账户,请配置密码-------warning"}' /etc/shadow
     echo " "
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>安全审计<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     echo "正常情况下登录到本机30天内的所有用户的历史记录:"
@@ -915,14 +876,14 @@ systemcheck() {
     if service rsyslog status | egrep " active \(running"; then
         echo ">>>经分析,syslog服务已开启"
     else
-        echo ">>>经分析,syslog服务未开启，建议通过service rsyslog start开启日志审计功能---------[需调整]"
+        echo ">>>经分析,syslog服务未开启,建议通过service rsyslog start开启日志审计功能---------warning"
     fi
     next
     echo "查看syslog日志是否开启外发:"
     if more /etc/rsyslog.conf | egrep "@...\.|@..\.|@.\.|\*.\* @...\.|\*\.\* @..\.|\*\.\* @.\."; then
-        echo ">>>经分析,客户端syslog日志已开启外发--------[需调整]"
+        echo ">>>经分析,客户端syslog日志已开启外发--------warning"
     else
-        echo ">>>经分析,客户端syslog日志未开启外发---------[无需调整]"
+        echo ">>>经分析,客户端syslog日志未开启外发---------ok"
     fi
     next
     echo "审计的要素和审计日志:"
@@ -941,34 +902,34 @@ systemcheck() {
     if [ -e "$log_secure" ]; then
         echo ">>>/var/log/secure日志文件存在"
     else
-        echo ">>>/var/log/secure日志文件不存在------[需调整]"
+        echo ">>>/var/log/secure日志文件不存在------warning"
     fi
     if [ -e "$log_messages" ]; then
         echo ">>>/var/log/messages日志文件存在"
     else
-        echo ">>>/var/log/messages日志文件不存在------[需调整]"
+        echo ">>>/var/log/messages日志文件不存在------warning"
     fi
     if [ -e "$log_cron" ]; then
         echo ">>>/var/log/cron日志文件存在"
     else
-        echo ">>>/var/log/cron日志文件不存在--------[需调整]"
+        echo ">>>/var/log/cron日志文件不存在--------warning"
     fi
     if [ -e "$log_boot" ]; then
         echo ">>>/var/log/boot.log日志文件存在"
     else
-        echo ">>>/var/log/boot.log日志文件不存在--------[需调整]"
+        echo ">>>/var/log/boot.log日志文件不存在--------warning"
     fi
     if [ -e "$log_dmesg" ]; then
         echo ">>>/var/log/dmesg日志文件存在"
     else
-        echo ">>>/var/log/dmesg日志文件不存在--------[需调整]"
+        echo ">>>/var/log/dmesg日志文件不存在--------warning"
     fi
 
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>入侵防范安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     echo "系统入侵行为:"
     more /var/log/secure | grep refused
     if [ $? == 0 ]; then
-        echo "有入侵行为，请分析处理--------[需调整]"
+        echo "有入侵行为,请分析处理--------warning"
     else
         echo ">>>无入侵行为"
     fi
@@ -978,7 +939,7 @@ systemcheck() {
     if [ $? == 1 ]; then
         echo ">>>无用户错误登入列表"
     else
-        echo ">>>用户错误登入--------[需调整]"
+        echo ">>>用户错误登入--------warning"
         lastb | head
     fi
     next
@@ -987,7 +948,7 @@ systemcheck() {
     if [ $? == 1 ]; then
         echo ">>>无ssh暴力登入信息"
     else
-        more /var/log/secure | awk '/Failed/{print $(NF-3)}' | sort | uniq -c | awk '{print ">>>登入失败的IP和尝试次数: "$2"="$1"次---------[需调整]";}'
+        more /var/log/secure | awk '/Failed/{print $(NF-3)}' | sort | uniq -c | awk '{print ">>>登入失败的IP和尝试次数: "$2"="$1"次---------warning";}'
     fi
     echo " "
 
@@ -997,14 +958,14 @@ systemcheck() {
     if service sshd status | grep -E "listening on|active \(running\)"; then
         echo ">>>SSH服务已开启"
     else
-        echo ">>>SSH服务未开启--------[需调整]"
+        echo ">>>SSH服务未开启--------warning"
     fi
     next
     echo "查看是否开启了Telnet-Server服务:"
     if more /etc/xinetd.d/telnetd 2>&1 | grep -E "disable=no"; then
         echo ">>>Telnet-Server服务已开启"
     else
-        echo ">>>Telnet-Server服务未开启--------[无需调整]"
+        echo ">>>Telnet-Server服务未开启--------ok"
     fi
     next
     ps axu | grep iptables | grep -v grep || ps axu | grep firewalld | grep -v grep
@@ -1012,21 +973,21 @@ systemcheck() {
         echo ">>>防火墙已启用"
         iptables -nvL --line-numbers
     else
-        echo ">>>防火墙未启用--------[需调整]"
+        echo ">>>防火墙未启用--------warning"
     fi
     next
     echo "查看系统SSH远程访问设置策略(host.deny拒绝列表):"
     if more /etc/hosts.deny | grep -E "sshd"; then
-        echo ">>>远程访问策略已设置--------[需调整]"
+        echo ">>>远程访问策略已设置--------warning"
     else
-        echo ">>>远程访问策略未设置--------[无需调整]"
+        echo ">>>远程访问策略未设置--------ok"
     fi
     next
     echo "查看系统SSH远程访问设置策略(hosts.allow允许列表):"
     if more /etc/hosts.allow | grep -E "sshd"; then
-        echo ">>>远程访问策略已设置--------[需调整]"
+        echo ">>>远程访问策略已设置--------warning"
     else
-        echo ">>>远程访问策略未设置--------[无需调整]"
+        echo ">>>远程访问策略未设置--------ok"
     fi
 
 }
@@ -1040,6 +1001,11 @@ cputest() {
 }
 
 iotestspeed() {
+
+    #io测试
+    io_test() {
+        (LANG=C dd if=/dev/zero of=benchtest_$$ bs=512k count=$1 conv=fdatasync && rm -f benchtest_$$) 2>&1 | awk -F, '{io=$NF} END { print io}' | sed 's/^[ \t]*//;s/[ \t]*$//'
+    }
 
     _blue "正在进行磁盘测速..."
     echo ''
@@ -1073,7 +1039,7 @@ iotestspeed() {
 countfileslines() {
 
     echo ''
-    _yellow '目前仅支持单一文件后缀搜索！'
+    _yellow '目前仅支持单一文件后缀搜索!'
     read -p "请输入绝对路径 ./(默认当前目录) /.../..  : " abpath
     if [[ "$abpath" = "" ]]; then
         abpath='./'
@@ -1083,7 +1049,7 @@ countfileslines() {
         suffix='sh'
     fi
 
-    # 使用 find 命令递归地查找指定目录下的所有文件，并执行计算行数的命令
+    # 使用 find 命令递归地查找指定目录下的所有文件,并执行计算行数的命令
     total=$(find $abpath -type f -name "*.$suffix" -exec wc -l {} \; | awk '{total += $1} END{print total}')
     # 输出总行数
     echo "$abpath 目录下的 后缀为 $suffix 文件的总行数是: $total"
@@ -1091,76 +1057,16 @@ countfileslines() {
 }
 
 
-#安装脚本
-meinstall(){
 
-_green '# Ubuntu初始化&工具脚本'
-_green '# Author:SSHPC <https://github.com/sshpc>'
-echo ''
 
-echo '  ________       '
-echo ' |\   ____\      '
-echo ' \ \  \___|_     '
-echo '  \ \_____  \    '
-echo '   \|____|\  \   '
-echo '     ____\_\  \  '
-echo '    |\_________\ '
-echo '    \|_________| '
-
-echo ''
-
-menutop
-
-echo ''
-_blue "欢迎使用！"
-echo ''
-
-read -n1 -r -p "开始安装脚本 (按任意键继续) ..."
-    
-    sleep 1
-    _yellow '检查系统环境..'
-    sleep 1
-
-    which s
-    if [ $? == 1 ]; then
-    _blue '开始安装脚本'
-    sleep 1
-
-        cp -f "$(pwd)/init.sh" /bin/init.sh
-        ln -s /bin/init.sh /bin/s
-    _blue '安装完成'
-    echo ''
-    _blue "你可以在任意位置使用命令 's' 运行"
-    echo ''
-    waitinput
-    else
-        _red '系统已存在s命令，无法安装，请检查！'
-        
-        exit
-    fi
-   
-
-}
-
-meuninstall(){
-    menutop
-    _blue '开始卸载脚本'
-    rm -rf /bin/init.sh
-    rm -rf /bin/s
-    sleep 1
-    _blue '卸载完成'
-    
-}
 
 #二级菜单
 #软件
 software() {
     menutop
-
-    echo "1:更新源            2: 安装常用软件   "
-
     next
-
+    echo "1:更新源            2: 安装常用软件   "
+    next
     echo "3.安装xray八合一    4. 安装x-ui  "
     next
     echo ""
@@ -1234,7 +1140,7 @@ software() {
 #网络
 networktools() {
     menutop
-
+    next
     _red "1:配置本地静态ip    2:启用dhcp动态获取"
     echo
     next
@@ -1296,6 +1202,7 @@ networktools() {
 #ufw防火墙&安全
 ufwsafe() {
     menutop
+    next
     echo "1:开启防火墙-ufw           2:关闭防火墙-ufw   "
     next
     echo "4:查看防火墙-ufw状态       5: 添加-ufw允许端口  "
@@ -1316,7 +1223,9 @@ ufwsafe() {
 
         ;;
     2)
-        ufwdel
+        ufw disable
+        echo "ufw已关闭"
+        ufwstatus
 
         ;;
 
@@ -1365,6 +1274,7 @@ ufwsafe() {
 sysset() {
 
     menutop
+    next
     echo "1:换阿里源    2:同步时间      3:命令行中文支持"
     next
     echo "4:密码秘钥root登录         5. 秘钥root登录   "
@@ -1390,6 +1300,8 @@ sysset() {
     1)
         menuname='主页/系统/换阿里源'
         huanyuanfun
+        aptupdatefun
+
         ;;
     2)
         synchronization_time
@@ -1463,6 +1375,7 @@ sysset() {
 #docker
 dockermain() {
     menutop
+    next
 
     echo "1:安装docker            2:查看docker镜像     "
     next
@@ -1486,23 +1399,23 @@ dockermain() {
     2)
 
         docker images
-        
+
         ;;
     3)
         docker ps
-        
+
         ;;
     4)
         docker ps -a
-        
+
         ;;
     5)
         dockerrund
-        
+
         ;;
     6)
         dockerrunit
-        
+
         ;;
 
     8)
@@ -1510,15 +1423,15 @@ dockermain() {
         ;;
     9)
         opencon
-        
+
         ;;
     10)
         stopcon
-        
+
         ;;
     11)
         rmcon
-        
+
         ;;
     99)
         s
@@ -1536,6 +1449,7 @@ dockermain() {
 #其他工具
 ordertools() {
     menutop
+    next
     echo "1:统计目录文件行数"
 
     menubottom
@@ -1557,25 +1471,22 @@ ordertools() {
     esac
 
     waitinput
-        s 6
+    s 6
 }
 
 clear
-#检查脚本是否已安装
+#检查脚本是否已安装(/bin/init.sh存在?)
 which init.sh
-    if [ $? == 1 ]; then
+if [ $? == 1 ]; then
     menuname='开箱页面'
-        meinstall
-    fi
-
+    meinstall
+fi
 
 #主菜单 main 主程序开始
 number="$1"
 
 if [[ "$number" = "" ]]; then
-
     menutop
-
     echo "1:软件      2:网络     3:ufw防火墙&安全"
     next
     echo "4:系统      5:docker   6:其他工具"
@@ -1584,7 +1495,6 @@ if [[ "$number" = "" ]]; then
     next
     echo "0: exit 退出"
     echo ""
-
     read -p "请输入命令数字: " number
 fi
 
@@ -1621,7 +1531,7 @@ case $number in
     wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
     meinstall
     ;;
-    777)
+777)
     menuname='脚本卸载'
     meuninstall
     ;;
