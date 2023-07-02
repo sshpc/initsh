@@ -1,5 +1,15 @@
 #!/bin/bash
 export LANG=en_US.UTF-8
+#全局变量初始化
+sinit() {
+    version='23.07'
+    #时间变量：
+    datevar=$(date +%y%m%d%H%M%S)
+
+    #菜单名称(默认主页)
+    menuname='主页'
+
+}
 #字体颜色定义
 _red() {
     printf '\033[0;31;31m%b\033[0m' "$1"
@@ -22,24 +32,19 @@ sinfo() {
     _green '# Ubuntu初始化&工具脚本'
     _green '# Author:SSHPC <https://github.com/sshpc>'
 }
-#时间变量：
-datevar=$(date)
-#版本
-version='23.7.1'
-#菜单名称(默认主页)
-menuname='主页'
+
 #分割线
 next() {
     printf "%-50s\n" "-" | sed 's/\s/-/g'
 }
-#等待
+#等待操作
 waitinput() {
     echo
     read -n1 -r -p "按任意键继续...(退出 Ctrl+C)"
 }
 #菜单头部
 menutop() {
-    which init.sh > /dev/null 2>&1
+    which init.sh >/dev/null 2>&1
     if [ $? == 0 ]; then
         clear
     fi
@@ -85,30 +90,36 @@ selfinstall() {
     echo
     read -n1 -r -p "脚本安装 (按任意键继续) ..."
     _yellow '检查系统环境..'
-    which s
-    if [ $? == 1 ]; then
-        _blue '开始安装脚本'
-        cp -f "$(pwd)/init.sh" /bin/init.sh
-        ln -s /bin/init.sh /bin/s
-        _blue '安装完成'
-        menuname='主页'
-        echo
-        _blue "你可以在任意位置使用命令 's' 运行"
-        echo
-        waitinput
-    else
+    if which s >/dev/null; then
         _red '系统已存在s程序,停止安装,请检查!'
         exit
+    else
+        _yellow '检查源文件..'
+        if [ -e "$(pwd)/init.sh" ]; then
+            _blue '开始安装脚本'
+            cp -f "$(pwd)/init.sh" /bin/init.sh
+            ln -s /bin/init.sh /bin/s
+            _blue '安装完成'
+            menuname='主页'
+            echo
+            _blue "你可以在任意位置使用命令 's' 运行"
+            echo
+            waitinput
+        else
+            echo "当前目录没有发现原始脚本请检查"
+            exit
+        fi
     fi
 }
 selfuninstall() {
     _blue '开始卸载脚本'
     rm -rf /bin/init.sh
     rm -rf /bin/s
+    rm -rf /bin/sgit
     _blue '卸载完成'
 }
 #脚本升级
-updateself(){
+updateself() {
     selfuninstall
     _blue '拉取最新版'
     wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
@@ -162,6 +173,7 @@ installcomso() {
     wait
     echo "所有包都已安装完成"
 }
+#专项卸载
 removephp() {
     uninstallstart php
     apt remove php -y
@@ -243,6 +255,33 @@ removemysql() {
     rm /etc/mysql/ -R
     uninstallend
 }
+#通用卸载
+softthoremove(){
+
+    read -p "请输入要卸载的软件名: " resoftname
+    _red "注意：将会删除关于 $resoftname 所有内容"
+    waitinput
+    uninstallstart $resoftname
+    apt remove $resoftname -y
+    apt-get --purge remove $resoftname -y
+    apt-get --purge remove $resoftname-* -y
+    echo "清除dept列表"
+    apt purge $(dpkg -l | grep $resoftname | awk '{print $2}' | tr "\n" " ")
+    echo "删除 $resoftname 的启动脚本"
+    update-rc.d -f $resoftname remove
+    echo
+    echo "删除所有包含 $resoftname 的文件"
+    rm -rf /etc/$resoftname
+    rm -rf /etc/init.d/$resoftname
+    find /etc -name *$resoftname* -print0 | xargs -0 rm -rf
+    rm -rf /usr/bin/$resoftname
+    rm -rf /var/log/$resoftname
+    rm -rf /lib/systemd/system/$resoftname.service
+    rm -rf /var/lib/$resoftname
+    rm -rf /run/$resoftname
+    uninstallend
+}
+
 ufwinstall() {
     apt install ufw -y
     echo "ufw 已安装"
@@ -898,6 +937,22 @@ countfileslines() {
     # 输出总行数
     echo "$abpath 目录下的 后缀为 $suffix 文件的总行数是: $total"
 }
+#安装git便捷提交
+igitcommiteasy() {
+    if which git >/dev/null; then
+        _blue "Git is already installed"
+        touch /bin/sgit
+        chmod +x /bin/sgit
+        echo 'git add . && git commit -m "`date +%y%m%d%H%M%S`" && git push' >/bin/sgit
+        _blue '安装完成'
+        echo
+        echo '现在使用sgit命令 完成git add commit +时间字符串 push 提交  其他git命令不支持 请使用原生命令'
+        echo
+    else
+        echo "Git没有安装"
+        exit
+    fi
+}
 #二级菜单
 #软件
 software() {
@@ -912,6 +967,8 @@ software() {
     _red "7:卸载php          8:卸载docker "
     echo
     _red "9:卸载v2ray        10:卸载mysql  "
+    echo
+    _red "20:强力卸载软件  "
     echo
     menubottom
     case $number in
@@ -950,8 +1007,13 @@ software() {
     9)
         removev2
         ;;
+
+        
     10)
         removemysql
+        ;;
+    20)
+        softthoremove
         ;;
     99)
         main
@@ -1212,6 +1274,8 @@ ordertools() {
     menutop
     echo
     echo "1:统计目录文件行数"
+    echo
+    echo "11:安装git便捷提交"
     menubottom
     case $number in
     0)
@@ -1219,6 +1283,9 @@ ordertools() {
         ;;
     1)
         countfileslines
+        ;;
+    11)
+        igitcommiteasy
         ;;
     99)
         main
@@ -1228,69 +1295,69 @@ ordertools() {
         ;;
     esac
     waitinput
-    main 6
+    main 5
 }
 
 #主菜单 main 主程序开始
-main(){
+main() {
 
-number="$1"
-if [[ "$number" = "" ]]; then
-    
-    menutop
-    
-    echo "1:软件         2:网络        3:系统 "
-    echo
-    echo "4:docker       5:其他工具"
-    echo
-    echo "666:脚本升级   777:脚本卸载"
-    echo
-    echo "0: 退出"
-    echo 
-    read -p "请输入命令数字: " number
-fi
-case $number in
-0)
-    exit
-    ;;
-1)
-    menuname='主页/软件'
-    software
-    ;;
-2)
-    menuname='主页/网络'
-    networktools
-    ;;
-3)
-    menuname='主页/系统'
-    sysset
-    ;;
-4)
-    menuname='主页/docker'
-    dockermain
-    ;;
-5)
-    menuname='主页/其他工具'
-    ordertools
-    ;;
-666)
-    updateself
-    
-    ;;
-777)
-    menuname='脚本卸载'
-    selfuninstall
-    ;;
-*)
-    inputerror
-    ;;
-esac
+    number="$1"
+    if [[ "$number" = "" ]]; then
+
+        menutop
+
+        echo "1:软件         2:网络        3:系统 "
+        echo
+        echo "4:docker       5:其他工具"
+        echo
+        echo "666:脚本升级   777:脚本卸载"
+        echo
+        echo "0: 退出"
+        echo
+        read -p "请输入命令数字: " number
+    fi
+    case $number in
+    0)
+        exit
+        ;;
+    1)
+        menuname='主页/软件'
+        software
+        ;;
+    2)
+        menuname='主页/网络'
+        networktools
+        ;;
+    3)
+        menuname='主页/系统'
+        sysset
+        ;;
+    4)
+        menuname='主页/docker'
+        dockermain
+        ;;
+    5)
+        menuname='主页/其他工具'
+        ordertools
+        ;;
+    666)
+        updateself
+
+        ;;
+    777)
+        menuname='脚本卸载'
+        selfuninstall
+        ;;
+    *)
+        inputerror
+        ;;
+    esac
 
 }
-
+sinit
 clear
 #检查脚本是否已安装(/bin/init.sh存在?)
-which init.sh > /dev/null 2>&1
+which init.sh >/dev/null 2>&1
 if [ $? == 1 ]; then
     menuname='开箱页面'
     selfinstall
