@@ -134,7 +134,8 @@ aptupdatefun() {
 uninstallstart() {
     echo
     _red "开始卸载 $1"
-    echo "服务关闭"
+    echo
+    echo "关闭服务.."
     service $1 stop
     systemctl stop $1
     echo
@@ -165,6 +166,7 @@ installcomso() {
         "nmap"
         "iperf"
         "zip"
+        "htop"
     )
     for package in "${packages[@]}"; do
         package_name="${package%:*}"

@@ -4,7 +4,7 @@
 
 ### 大道至简理念
 
-1. 交互式数字操作 [查看示例](#chapter1)
+1. 交互式数字操作 [查看示例](#2首次运行会直接安装)
 2. 支持Ubuntu、 Debian 系
 
 > 后续支持其他Linux发行版
@@ -39,7 +39,7 @@
 wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && sudo ./init.sh
 ```
 
-##### 2.首次运行会直接安装`<a id="chapter1"></a>`
+##### 2.首次运行会直接安装
 
 > 脚本安装进\bin 执行了软连接 s
 > 安装后任意位置可用命令 s 直接运行
