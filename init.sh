@@ -921,12 +921,12 @@ software() {
     1)
         aptupdatefun
         waitinput
-        s 1
+        main 1
         ;;
     2)
         installcomso
         waitinput
-        s 1
+        main 1
         ;;
     3)
         wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/mack-a/v2ray-agent/master/install.sh" && chmod 700 /root/install.sh && /root/install.sh
@@ -954,7 +954,7 @@ software() {
         removemysql
         ;;
     99)
-        s
+        main
         ;;
     *)
         inputerror
@@ -996,7 +996,7 @@ networktools() {
     3)
         netinfo
         waitinput
-        s 2
+        main 2
         ;;
     4)
         netfast
@@ -1004,18 +1004,18 @@ networktools() {
     5)
         route -n
         waitinput
-        s 2
+        main 2
         ;;
     6)
         netstat -tunlp
         waitinput
-        s 2
+        main 2
         ;;
     7)
         curl -fsSL git.io/speedtest-cli.sh | sudo bash
         speedtest
         waitinput
-        s 2
+        main 2
         ;;
     11)
         ufwinstall
@@ -1049,10 +1049,10 @@ networktools() {
         netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
         echo
         waitinput
-        s 2
+        main 2
         ;;
     99)
-        s
+        main
         ;;
     *)
         inputerror
@@ -1107,13 +1107,13 @@ sysset() {
         ;;
     7)
         sshsetpub
-        s 3
+        main 3
         waitinput
         ;;
     8)
         cat /root/.ssh/authorized_keys
         waitinput
-        s 3
+        main 3
         ;;
     9)
         sysinfo
@@ -1121,13 +1121,13 @@ sysset() {
     10)
         diskinfo
         waitinput
-        s 3
+        main 3
         ;;
     11)
         crontab -e
         service cron reload
         waitinput
-        s 3
+        main 3
         ;;
     12)
         systemctl list-unit-files | grep enabled
@@ -1142,7 +1142,7 @@ sysset() {
         iotestspeed
         ;;
     99)
-        s
+        main
         ;;
     *)
         inputerror
@@ -1198,14 +1198,14 @@ dockermain() {
         rmcon
         ;;
     99)
-        s
+        main
         ;;
     *)
         inputerror
         ;;
     esac
     waitinput
-    s 3
+    main 3
 }
 #其他工具
 ordertools() {
@@ -1221,24 +1221,19 @@ ordertools() {
         countfileslines
         ;;
     99)
-        s
+        main
         ;;
     *)
         inputerror
         ;;
     esac
     waitinput
-    s 6
+    main 6
 }
-clear
-#检查脚本是否已安装(/bin/init.sh存在?)
-which init.sh > /dev/null 2>&1
-if [ $? == 1 ]; then
-    menuname='开箱页面'
-    selfinstall
-fi
 
 #主菜单 main 主程序开始
+main(){
+
 number="$1"
 if [[ "$number" = "" ]]; then
     
@@ -1290,3 +1285,14 @@ case $number in
     inputerror
     ;;
 esac
+
+}
+
+clear
+#检查脚本是否已安装(/bin/init.sh存在?)
+which init.sh > /dev/null 2>&1
+if [ $? == 1 ]; then
+    menuname='开箱页面'
+    selfinstall
+fi
+main
