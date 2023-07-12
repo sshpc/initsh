@@ -55,14 +55,12 @@ menutop() {
     _yellow "当前菜单: $menuname "
     echo
 }
-#二级菜单底部
+#菜单底部
 menubottom() {
     echo
-    next
+    printf '\033[0;31;36m%b\033[0m' "0: 退出  " ;if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "  99: 返回主页";fi
     echo
-    _blue "0: 退出    99: 返回主页"
-    echo
-    read -p "请输入命令数字: " number
+    read -ep "请输入命令数字: " number
 }
 #输入有误
 inputerror() {
@@ -259,7 +257,7 @@ removemysql() {
 #通用卸载
 softthoremove() {
 
-    read -p "请输入要卸载的软件名: " resoftname
+    read -ep "请输入要卸载的软件名: " resoftname
     _red "注意：将会删除关于 $resoftname 所有内容"
     waitinput
     uninstallstart $resoftname
@@ -282,71 +280,121 @@ softthoremove() {
     rm -rf /run/$resoftname
     uninstallend
 }
+#ufw防火墙
+ufwfun() {
+    ufwinstall() {
+        apt install ufw -y
+        echo "ufw 已安装"
+        echo "请输入y以开启ufw"
+        ufw enable
+        echo "ufw已开启"
+        ufw allow 22
+        echo "已配置允许 22 端口"
+        ufw default deny
+        echo "已配置关闭所有外部对本机的访问"
+        ufwstatus
+    }
+    ufwadd() {
+        read -ep "请输入端口号 (0-65535): " port
+        until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
+            echo "$port: 无效端口."
+            read -ep "请输入端口号 (0-65535): " port
+        done
+        ufw allow $port
+        echo "端口 $port 已放行"
+        ufwstatus
+    }
+    ufwstatus() {
+        ufw status
+        echo "提示:inactive 关闭状态 , active 开启状态"
+    }
+    ufwclose() {
+        read -ep "请输入端口号 (0-65535): " unport
+        until [[ -z "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
+            echo "$unport: 无效端口."
+            read -ep "请输入端口号 (0-65535): " unport
+        done
+        ufw delete allow $unport
+        echo "端口 $unport 已关闭"
+        ufwstatus
+    }
 
-ufwinstall() {
-    apt install ufw -y
-    echo "ufw 已安装"
-    echo "请输入y以开启ufw"
-    ufw enable
-    echo "ufw已开启"
-    ufw allow 22
-    echo "已配置允许 22 端口"
-    ufw default deny
-    echo "已配置关闭所有外部对本机的访问"
-    ufwstatus
-}
-ufwadd() {
-    read -p "请输入端口号 (0-65535): " port
-    until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
-        echo "$port: 无效端口."
-        read -p "请输入端口号 (0-65535): " port
+    echo "1:开启ufw  2:关闭ufw  3:ufw状态  4: 添加端口  5:关闭端口"
+    until [[ $PROTOCOL_CHOICE =~ ^[1-5]$ ]]; do
+        read -rp "Protocol [1-5]: " PROTOCOL_CHOICE
     done
-    ufw allow $port
-    echo "端口 $port 已放行"
-    ufwstatus
+    case $PROTOCOL_CHOICE in
+    1)
+
+        ufwinstall
+        ;;
+    2)
+        ufw disable
+        echo "ufw已关闭"
+        ufwstatus
+        ;;
+    3)
+
+        ufwstatus
+        ;;
+    4)
+
+        ufwadd
+        ;;
+    5)
+
+        ufwclose
+        ;;
+    esac
+
 }
-ufwstatus() {
-    ufw status
-    echo "提示:inactive 关闭状态 , active 开启状态"
-}
-ufwclose() {
-    read -p "请输入端口号 (0-65535): " unport
-    until [[ -z "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
-        echo "$unport: 无效端口."
-        read -p "请输入端口号 (0-65535): " unport
+
+fail2banfun() {
+    installfail2ban() {
+        echo "检查并安装fail2ban"
+        apt install fail2ban -y
+        echo "fail2ban 已安装"
+        echo "开始配置fail2ban"
+        waitinput
+        read -ep "请输入尝试次数 (直接回车默认4次): " retry
+        read -ep "请输入拦截后禁止访问的时间 (直接回车默认604800s): " timeban
+        if [[ "$retry" = "" ]]; then
+            retry=4
+        fi
+        if [[ "$timeban" = "" ]]; then
+            timeban=604800
+        fi
+        rm /etc/fail2ban/jail.d/sshd.local
+        echo "[ssh-iptables]" >>/etc/fail2ban/jail.d/sshd.local
+        echo "enabled  = true" >>/etc/fail2ban/jail.d/sshd.local
+        echo "filter   = sshd" >>/etc/fail2ban/jail.d/sshd.local
+        echo "action   = iptables[name=SSH, port=ssh, protocol=tcp]" >>/etc/fail2ban/jail.d/sshd.local
+        echo "logpath  = /var/log/auth.log" >>/etc/fail2ban/jail.d/sshd.local
+        echo "maxretry = $retry" >>/etc/fail2ban/jail.d/sshd.local
+        echo "bantime  = $timeban" >>/etc/fail2ban/jail.d/sshd.local
+        service fail2ban start
+        echo "服务已开启"
+        echo
+        echo "----服务状态----"
+        fail2ban-client status sshd
+    }
+
+    echo "1.安装配置  2.查看状态"
+    until [[ $PROTOCOL_CHOICE =~ ^[1-2]$ ]]; do
+        read -rp "Protocol [1-2]: " PROTOCOL_CHOICE
     done
-    ufw delete allow $unport
-    echo "端口 $unport 已关闭"
-    ufwstatus
+    case $PROTOCOL_CHOICE in
+    1)
+
+        installfail2ban
+        ;;
+    2)
+
+        fail2ban-client status sshd
+        ;;
+    esac
 }
-installfail2ban() {
-    echo "检查并安装fail2ban"
-    apt install fail2ban -y
-    echo "fail2ban 已安装"
-    echo "开始配置fail2ban"
-    waitinput
-    read -p "请输入尝试次数 (直接回车默认4次): " retry
-    read -p "请输入拦截后禁止访问的时间 (直接回车默认604800s): " timeban
-    if [[ "$retry" = "" ]]; then
-        retry=4
-    fi
-    if [[ "$timeban" = "" ]]; then
-        timeban=604800
-    fi
-    rm /etc/fail2ban/jail.d/sshd.local
-    echo "[ssh-iptables]" >>/etc/fail2ban/jail.d/sshd.local
-    echo "enabled  = true" >>/etc/fail2ban/jail.d/sshd.local
-    echo "filter   = sshd" >>/etc/fail2ban/jail.d/sshd.local
-    echo "action   = iptables[name=SSH, port=ssh, protocol=tcp]" >>/etc/fail2ban/jail.d/sshd.local
-    echo "logpath  = /var/log/auth.log" >>/etc/fail2ban/jail.d/sshd.local
-    echo "maxretry = $retry" >>/etc/fail2ban/jail.d/sshd.local
-    echo "bantime  = $timeban" >>/etc/fail2ban/jail.d/sshd.local
-    service fail2ban start
-    echo "服务已开启"
-    echo
-    echo "----服务状态----"
-    fail2ban-client status sshd
-}
+
 huanyuanfun() {
     a1804() {
         echo "deb http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse" >>/etc/apt/sources.list
@@ -385,7 +433,7 @@ huanyuanfun() {
     lsb_release -a
     echo "选择你的Ubuntu版本(其他版本请手动换源)"
     echo "1:Ubuntu 18.04(bionic)    2:Ubuntu 20.04(focal)  3:Ubuntu 22.04(jammy)"
-    read -p "请输入命令数字: " sourcesnumber
+    read -ep "请输入命令数字: " sourcesnumber
     echo "开始备份原列表"
     cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
     echo "原source list已全量备份至 /etc/apt/sources.list.bak.$datevar"
@@ -424,26 +472,17 @@ synchronization_time() {
 }
 openroot() {
     echo "确保root远程权限未开"
-    read -n1 -p "Do you want to continue [Y/N]? " answer
-    case $answer in
-    Y | y)
-        echo
-        echo "开始备份原文件sshd_config"
-        cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
-        echo "原文件sshd_config已备份."
-        echo "port 22" >>/etc/ssh/sshd_config
-        echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
-        echo "PasswordAuthentication yes" >>/etc/ssh/sshd_config
-        echo "重启服务中"
-        service sshd restart
-        echo "ok"
-        ;;
-    N | n)
-        echo
-        echo "OK, goodbye"
-        exit
-        ;;
-    esac
+    waitinput
+    echo "开始备份原文件sshd_config"
+    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
+    echo "原文件sshd_config已备份."
+    echo "port 22" >>/etc/ssh/sshd_config
+    echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
+    echo "PasswordAuthentication yes" >>/etc/ssh/sshd_config
+    echo "重启服务中"
+    service sshd restart
+    echo "ok"
+
 }
 sshpubonly() {
     echo "开始备份原文件sshd_config"
@@ -468,7 +507,7 @@ supportcn() {
 #生成ssh密钥对
 sshgetpub() {
     echo "输完3次回车"
-    read -p "请输入email: " email
+    read -ep "请输入email: " email
     ssh-keygen -t ed25519 -C "$email"
     echo
     echo "ssh秘钥钥生成成功"
@@ -479,7 +518,7 @@ sshgetpub() {
 #写入其他ssh公钥
 sshsetpub() {
     echo "请填入ssh公钥"
-    read -p "请粘贴至命令行回车: " sshpub
+    read -ep "请粘贴至命令行回车: " sshpub
     echo -e $sshpub >>/root/.ssh/authorized_keys
     echo
     echo "ssh公钥写入成功"
@@ -561,7 +600,7 @@ staticip() {
     waitinput
     echo "确保网卡名称ens33 还是其他"
     ifconfig
-    read -p "请输入网卡名称 (例:ens33 回车默认ens33): " ens
+    read -ep "请输入网卡名称 (例:ens33 回车默认ens33): " ens
     if [[ "$ens" = "" ]]; then
         ens="ens33"
     fi
@@ -571,24 +610,24 @@ staticip() {
     echo "原00-installer-config.yaml已备份."
     echo "开始配置静态ip"
     ipaddresses="errorip"
-    read -p "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
+    read -ep "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
     until [[ "$ipaddresses" ]]; do
         echo "$ipaddresses: 网络地址不能为空."
-        read -p "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
+        read -ep "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
     done
     echo "网络地址为:$ipaddresses"
     echo "提示:x.x.x.x"
-    read -p "请输入网关: " gateway
+    read -ep "请输入网关: " gateway
     until [[ "$gateway" ]]; do
         echo "$gateway: 网关不能为空."
-        read -p "请输入网关: " gateway
+        read -ep "请输入网关: " gateway
     done
     echo "网关为:$gateway"
     echo "提示:x.x.x.x"
-    read -p "请输入主DNS: " nameservers
+    read -ep "请输入主DNS: " nameservers
     until [[ "$nameservers" ]]; do
         echo "$nameservers: DNS不能为空."
-        read -p "请输入主DNS: " nameservers
+        read -ep "请输入主DNS: " nameservers
     done
     echo "DNS地址为:$nameservers "
     cat <<EOM >/etc/netplan/00-installer-config.yaml
@@ -611,7 +650,7 @@ dhcpip() {
     echo "开始配置DHCP"
     echo "确保网卡名称ens33 还是其他"
     ifconfig
-    read -p "请输入网卡名称 (例:ens33 回车默认ens33): " ens
+    read -ep "请输入网卡名称 (例:ens33 回车默认ens33): " ens
     if [[ "$ens" = "" ]]; then
         ens="ens33"
         echo "网卡为" $ens
@@ -645,47 +684,12 @@ netfast() {
     echo "测速完成"
     echo
 }
-dockerrund() {
-    echo
-    docker images
-    echo
-    read -p "请输入镜像包名或idREPOSITORY: " dcimage
-    read -p "请输入容器端口: " conport
-    read -p "请输入宿主机端口: " muport
-    read -p "请输入执行参数: " param
-    docker run -d -p $muport:$conport $dcimage $param
-    echo "$dcimage 已在后台运行中"
-}
-dockerrunit() {
-    echo
-    docker images
-    echo
-    read -p "请输入镜像包名或idREPOSITORY: " dcimage
-    read -p "请输入容器端口: " conport
-    read -p "请输入宿主机端口: " muport
-    read -p "请输入执行参数(默认/bin/bash): " param
-    if [[ "$param" = "" ]]; then
-        param="/bin/bash"
-    fi
-    docker run -it -p $muport:$conport $dcimage $param
-    echo "$dcimage 后台运行中"
-}
-dockerexec() {
-    echo
-    docker ps
-    echo
-    read -p "请输入容器名或id: " containerd
-    read -p "请输入执行参数(默认/bin/bash): " param
-    if [[ "$param" = "" ]]; then
-        param="/bin/bash"
-    fi
-    docker exec -it $containerd $param
-}
+
 opencon() {
     echo
     docker ps -a
     echo
-    read -p "请输入容器名或id: " containerd
+    read -ep "请输入容器名或id: " containerd
     docker start $containerd
     echo
     echo "正在运行的容器 "
@@ -695,7 +699,7 @@ stopcon() {
     echo
     docker ps
     echo
-    read -p "请输入容器名或id: " containerd
+    read -ep "请输入容器名或id: " containerd
     docker stop $containerd
     echo "正在运行的容器 "
     docker ps
@@ -704,7 +708,7 @@ rmcon() {
     echo
     docker ps -a
     echo
-    read -p "请输入容器名或id: " containerd
+    read -ep "请输入容器名或id: " containerd
     docker rm -f $containerd
     echo "所有容器 "
     docker ps -a
@@ -925,11 +929,11 @@ iotestspeed() {
 countfileslines() {
     echo
     _yellow '目前仅支持单一文件后缀搜索!'
-    read -p "请输入绝对路径 ./(默认当前目录) /.../..  : " abpath
+    read -ep "请输入绝对路径 ./(默认当前目录) /.../..  : " abpath
     if [[ "$abpath" = "" ]]; then
         abpath='./'
     fi
-    read -p "请输入要搜索的文件后缀: sh(默认) php  html ...  : " suffix
+    read -ep "请输入要搜索的文件后缀: sh(默认) php  html ...  : " suffix
     if [[ "$suffix" = "" ]]; then
         suffix='sh'
     fi
@@ -966,7 +970,7 @@ iperftest() {
     iperf3client() {
 
         until [[ "$serversip" ]]; do
-            read -p "请输入服务器ip: " serversip
+            read -ep "请输入服务器ip: " serversip
         done
 
         iperf3 -u -c $serversip -b 2000M -t 40
@@ -1001,7 +1005,7 @@ nmapfun() {
         echo
 
         until [[ "$ips" ]]; do
-            read -p "请输入网段x.x.x.x/x: " ips
+            read -ep "请输入网段x.x.x.x/x: " ips
         done
 
         nmap -sP $ips
@@ -1009,7 +1013,7 @@ nmapfun() {
     nmapportcat() {
 
         until [[ "$ip" ]]; do
-            read -p "请输入ip: " ip
+            read -ep "请输入ip: " ip
         done
 
         nmap $ip
@@ -1030,7 +1034,7 @@ nmapfun() {
         ;;
     esac
 }
-#二级菜单
+
 #软件
 software() {
     menutop
@@ -1048,7 +1052,6 @@ software() {
     _red "39:卸载v2ray        40:卸载mysql  "
     echo
     _red "200:强力卸载软件  "
-    echo
     menubottom
     case $number in
     0)
@@ -1109,99 +1112,43 @@ software() {
 #网络
 networktools() {
     menutop
-    echo
-    echo "1:配置本机网卡静态ip    2:启用dhcp动态获取"
-    echo
-    echo "3:网络信息             4.网络测速 (外网speednet)  "
-    echo
-    echo "5:路由表               6:查看监听端口     "
-    echo
-    echo "7:SpeedCLI 测速        8:三网测速"
-    echo
-    echo "9:iperf3 本地测速       10:nmap 扫描 "
-    echo
-    echo "11:开启ufw             12:关闭ufw   "
-    echo
-    echo "14:ufw状态             15: 添加ufw端口  "
-    echo
-    echo "16:关闭ufw端口         17:配置fail2ban "
-    echo
-    echo "18:fail2ban状态       19:ssh爆破记录  "
-    echo
-    echo "20:各IP地址连接数       "
+    _yellow "-信息-"
+    echo "11:网络信息         12:路由表         "
+    echo "13:查看监听端口     14:各IP地址连接数  "
+    echo "15:ssh爆破记录 "
+    _yellow "-测速-"
+    echo "21.网络测速 (外网speednet)       22:SpeedCLI 测速 "
+    echo "23:三网测速   24:iperf3 本地测速"
+    _yellow "-内网-"
+    echo "31:配置本机网卡静态ip    32:启用dhcp动态获取"
+    echo "33:nmap 扫描        "
+    _yellow "-防火墙-"
+    echo "41:ufw  "
+    _yellow "-安全-"
+    echo "50:fail2ban     "
     menubottom
     case $number in
     0)
         exit
         ;;
-    1)
-        staticip
-        ;;
-    2)
-        dhcpip
-        ;;
-    3)
+
+    11)
         netinfo
         waitinput
         main 2
         ;;
-    4)
-        netfast
-        ;;
-    5)
+
+    12)
         route -n
         waitinput
         main 2
         ;;
-    6)
+    13)
         netstat -tunlp
         waitinput
         main 2
         ;;
-    7)
-        curl -fsSL git.io/speedtest-cli.sh | sudo bash
-        speedtest
-        waitinput
-        main 2
-        ;;
-    8)
-        bash <(curl -Lso- https://down.wangchao.info/sh/superspeed.sh)
-        waitinput
-        main 2
-        ;;
-    9)
-        iperftest
-        ;;
-    10)
-        nmapfun
-        ;;
-    11)
-        ufwinstall
-        ;;
-    12)
-        ufw disable
-        echo "ufw已关闭"
-        ufwstatus
-        ;;
     14)
-        ufwstatus
-        ;;
-    15)
-        ufwadd
-        ;;
-    16)
-        ufwclose
-        ;;
-    17)
-        installfail2ban
-        ;;
-    18)
-        fail2ban-client status sshd
-        ;;
-    19)
-        lastb | grep root | awk '{print $3}' | sort | uniq
-        ;;
-    20)
         echo
         echo '   数量 ip'
         netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
@@ -1209,6 +1156,42 @@ networktools() {
         waitinput
         main 2
         ;;
+    15)
+        lastb | grep root | awk '{print $3}' | sort | uniq
+        ;;
+    21)
+        netfast
+        ;;
+    22)
+        curl -fsSL git.io/speedtest-cli.sh | sudo bash
+        speedtest
+        waitinput
+        main 2
+        ;;
+    23)
+        bash <(curl -Lso- https://down.wangchao.info/sh/superspeed.sh)
+        waitinput
+        main 2
+        ;;
+    24)
+        iperftest
+        ;;
+    31)
+        staticip
+        ;;
+    32)
+        dhcpip
+        ;;
+    33)
+        nmapfun
+        ;;
+    40)
+        ufwfun
+        ;;
+    50)
+        fail2banfun
+        ;;
+
     99)
         main
         ;;
@@ -1301,7 +1284,7 @@ sysset() {
     15)
         iotestspeed
         ;;
-     16)
+    16)
         _blue '添加类似  nohup ... >> xxx.log 2>&1 &  最后行加 exit 0 '
         waitinput
         vim /etc/rc.local
@@ -1315,7 +1298,44 @@ sysset() {
     esac
 }
 #docker
-dockermain() {
+dockerfun() {
+
+    dockerrund() {
+        echo
+        docker images
+        echo
+        read -ep "请输入镜像包名或idREPOSITORY: " dcimage
+        read -ep "请输入容器端口: " conport
+        read -ep "请输入宿主机端口: " muport
+        read -ep "请输入执行参数: " param
+        docker run -d -p $muport:$conport $dcimage $param
+        echo "$dcimage 已在后台运行中"
+    }
+    dockerrunit() {
+        echo
+        docker images
+        echo
+        read -ep "请输入镜像包名或idREPOSITORY: " dcimage
+        read -ep "请输入容器端口: " conport
+        read -ep "请输入宿主机端口: " muport
+        read -ep "请输入执行参数(默认/bin/bash): " param
+        if [[ "$param" = "" ]]; then
+            param="/bin/bash"
+        fi
+        docker run -it -p $muport:$conport $dcimage $param
+        echo "$dcimage 后台运行中"
+    }
+    dockerexec() {
+        echo
+        docker ps
+        echo
+        read -ep "请输入容器名或id: " containerd
+        read -ep "请输入执行参数(默认/bin/bash): " param
+        if [[ "$param" = "" ]]; then
+            param="/bin/bash"
+        fi
+        docker exec -it $containerd $param
+    }
     menutop
     echo
     echo "1:安装docker            2:查看docker镜像     "
@@ -1370,7 +1390,7 @@ dockermain() {
         ;;
     esac
     waitinput
-    main 3
+    main 4
 }
 #其他工具
 ordertools() {
@@ -1413,11 +1433,8 @@ main() {
         echo
         echo "4:docker       5:其他工具"
         echo
-        echo "666:脚本升级   777:脚本卸载"
-        echo
-        echo "0: 退出"
-        echo
-        read -p "请输入命令数字: " number
+        echo "66:脚本升级   77:脚本卸载"
+        menubottom
     fi
     case $number in
     0)
@@ -1437,17 +1454,17 @@ main() {
         ;;
     4)
         menuname='主页/docker'
-        dockermain
+        dockerfun
         ;;
     5)
         menuname='主页/其他工具'
         ordertools
         ;;
-    666)
+    66)
         updateself
 
         ;;
-    777)
+    77)
         menuname='脚本卸载'
         selfuninstall
         ;;
