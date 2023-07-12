@@ -157,14 +157,13 @@ installcomso() {
         echo "$package_name 安装完成"
     }
     packages=(
+        "wget"
         "curl"
         "net-tools"
         "vim"
         "openssh-server"
         "screen"
         "git"
-        "nmap"
-        "iperf"
         "zip"
         "htop"
     )
@@ -258,7 +257,7 @@ removemysql() {
     uninstallend
 }
 #通用卸载
-softthoremove(){
+softthoremove() {
 
     read -p "请输入要卸载的软件名: " resoftname
     _red "注意：将会删除关于 $resoftname 所有内容"
@@ -955,6 +954,82 @@ igitcommiteasy() {
         exit
     fi
 }
+
+iperftest() {
+
+    which iperf3 >/dev/null 2>&1
+    if [ $? == 1 ]; then
+        echo "iperf3 未安装,正在安装..."
+        apt install iperf3 -y
+    fi
+
+    iperf3client() {
+
+        until [[ "$serversip" ]]; do
+            read -p "请输入服务器ip: " serversip
+        done
+
+        iperf3 -u -c $serversip -b 2000M -t 40
+    }
+
+    echo "请选择运行模式  1.服务端  2.客户端"
+    until [[ $PROTOCOL_CHOICE =~ ^[1-2]$ ]]; do
+        read -rp "Protocol [1-2]: " PROTOCOL_CHOICE
+    done
+    case $PROTOCOL_CHOICE in
+    1)
+        _blue '端口默认为 5201'
+        iperf3 -s
+        ;;
+    2)
+        iperf3client
+        ;;
+    esac
+}
+
+nmapfun() {
+
+    which nmap >/dev/null 2>&1
+    if [ $? == 1 ]; then
+        echo "nmap 未安装,正在安装..."
+        apt install nmap -y
+    fi
+
+    nmapdetection() {
+        echo '本地网络：'
+        ip addr show | grep "inet " | grep -v "127.0.0.1"
+        echo
+
+        until [[ "$ips" ]]; do
+            read -p "请输入网段x.x.x.x/x: " ips
+        done
+
+        nmap -sP $ips
+    }
+    nmapportcat() {
+
+        until [[ "$ip" ]]; do
+            read -p "请输入ip: " ip
+        done
+
+        nmap $ip
+    }
+
+    echo "1.主机探测  2.端口扫描"
+    until [[ $PROTOCOL_CHOICE =~ ^[1-2]$ ]]; do
+        read -rp "Protocol [1-2]: " PROTOCOL_CHOICE
+    done
+    case $PROTOCOL_CHOICE in
+    1)
+        _blue '扫描网段中有哪些主机在线，本质上是Ping扫描'
+        nmapdetection
+        ;;
+    2)
+        _blue '默认扫描1-65535 扫描「指定端口」nmap ip -p 1-2000'
+        nmapportcat
+        ;;
+    esac
+}
 #二级菜单
 #软件
 software() {
@@ -964,13 +1039,15 @@ software() {
     echo
     echo "3:安装xray八合一    4:安装x-ui  "
     echo
-    _red "5:卸载nginx        6:卸载Apache    "
+    echo "5:安装openvpn        "
     echo
-    _red "7:卸载php          8:卸载docker "
+    _red "35:卸载nginx        36:卸载Apache    "
     echo
-    _red "9:卸载v2ray        10:卸载mysql  "
+    _red "37:卸载php          38:卸载docker "
     echo
-    _red "20:强力卸载软件  "
+    _red "39:卸载v2ray        40:卸载mysql  "
+    echo
+    _red "200:强力卸载软件  "
     echo
     menubottom
     case $number in
@@ -995,26 +1072,30 @@ software() {
         bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
         ;;
     5)
+        _blue '即将下载sh脚本到当前目录,安装后记得修改/etc/openvpn/client-template.txt 文件路由规则'
+        waitinput
+        curl -O https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh && chmod +x openvpn-install.sh && ./openvpn-install.sh
+        ;;
+    35)
         removenginx
         ;;
-    6)
+    36)
         removeapache
         ;;
-    7)
+    37)
         removephp
         ;;
-    8)
+    38)
         removedocker
         ;;
-    9)
+    39)
         removev2
         ;;
 
-        
-    10)
+    40)
         removemysql
         ;;
-    20)
+    200)
         softthoremove
         ;;
     99)
@@ -1035,7 +1116,9 @@ networktools() {
     echo
     echo "5:路由表               6:查看监听端口     "
     echo
-    echo "7:SpeedCLI 外网测速 "
+    echo "7:SpeedCLI 测速        8:三网测速"
+    echo
+    echo "9:iperf3 本地测速       10:nmap 扫描 "
     echo
     echo "11:开启ufw             12:关闭ufw   "
     echo
@@ -1080,6 +1163,17 @@ networktools() {
         speedtest
         waitinput
         main 2
+        ;;
+    8)
+        bash <(curl -Lso- https://down.wangchao.info/sh/superspeed.sh)
+        waitinput
+        main 2
+        ;;
+    9)
+        iperftest
+        ;;
+    10)
+        nmapfun
         ;;
     11)
         ufwinstall
@@ -1143,7 +1237,7 @@ sysset() {
     echo
     echo "13:系统检查               14:cpu压力测试  "
     echo
-    echo "15:磁盘测速              "
+    echo "15:磁盘测速              16:配置开机运行脚本 rc.local"
     menubottom
     case $number in
     0)
@@ -1195,6 +1289,8 @@ sysset() {
         ;;
     12)
         systemctl list-unit-files | grep enabled
+        _blue '/etc/rc.local 和开机启动脚本'
+        cat /etc/rc.local
         ;;
     13)
         systemcheck
@@ -1204,6 +1300,11 @@ sysset() {
         ;;
     15)
         iotestspeed
+        ;;
+     16)
+        _blue '添加类似  nohup ... >> xxx.log 2>&1 &  最后行加 exit 0 '
+        waitinput
+        vim /etc/rc.local
         ;;
     99)
         main
