@@ -1035,6 +1035,17 @@ nmapfun() {
     esac
 }
 
+vnstatfun(){
+apt-get install vnstat
+
+    ifconfig
+    read -ep "请输入网卡名称 (默认eth0): " ens
+    if [[ "$ens" = "" ]]; then
+        ens="eth0"
+    fi
+        vnstat -l -i $ens
+}
+
 #软件
 software() {
     menutop
@@ -1115,7 +1126,7 @@ networktools() {
     _yellow "-信息-"
     echo "11:网络信息         12:路由表         "
     echo "13:查看监听端口     14:各IP地址连接数  "
-    echo "15:ssh爆破记录 "
+    echo "15:ssh爆破记录     16:实时显示当前网速"
     _yellow "-测速-"
     echo "21.网络测速 (外网speednet)       22:SpeedCLI 测速 "
     echo "23:三网测速   24:iperf3 本地测速"
@@ -1158,6 +1169,10 @@ networktools() {
         ;;
     15)
         lastb | grep root | awk '{print $3}' | sort | uniq
+        ;;
+     16)
+     vnstatfun
+        
         ;;
     21)
         netfast
