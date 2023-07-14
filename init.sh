@@ -5,10 +5,8 @@ sinit() {
     version='23.07'
     #时间变量：
     datevar=$(date +%y%m%d%H%M%S)
-
     #菜单名称(默认主页)
     menuname='主页'
-
 }
 #字体颜色定义
 _red() {
@@ -27,16 +25,11 @@ _blue() {
     printf '\033[0;31;36m%b\033[0m' "$1"
     echo
 }
-#介绍
-sinfo() {
-    _green '# Ubuntu初始化&工具脚本'
-    _green '# Author:SSHPC <https://github.com/sshpc>'
-}
 #分割线
 next() {
     printf "%-50s\n" "-" | sed 's/\s/-/g'
 }
-#等待操作
+#按任意键继续
 waitinput() {
     echo
     read -n1 -r -p "按任意键继续...(退出 Ctrl+C)"
@@ -47,29 +40,19 @@ menutop() {
     if [ $? == 0 ]; then
         clear
     fi
-    sinfo
+    _green '# Ubuntu初始化&工具脚本'
+    _green '# Author:SSHPC <https://github.com/sshpc>'
     echo
     _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v$version"
     echo
     _yellow "当前菜单: $menuname "
     echo
 }
-#菜单底部
-menubottom() {
-    echo
-    printf '\033[0;31;36m%b\033[0m' "q: 退出  "
-    if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "  0: 返回主页"; fi
-    echo
-    echo
-    read -ep "请输入命令数字: " number
-}
 #菜单渲染
 menu() {
     menutop
-    number="$1"
     options=("$@")
     num_options=${#options[@]}
-
     # 渲染菜单
     for ((i = 0; i < num_options; i += 4)); do
         printf "$((i / 2 + 1)): ${options[i]}           "
@@ -77,8 +60,13 @@ menu() {
         echo
         echo
     done
-    menubottom
-    # Handle the user's input
+    echo
+    printf '\033[0;31;36m%b\033[0m' "q: 退出  "
+    if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "  0: 返回主页"; fi
+    echo
+    echo
+    # 获取用户输入
+    read -ep "请输入命令数字: " number
     if [[ $number -ge 1 && $number -le $((num_options / 2)) ]]; then
         action_index=$((2 * (number - 1) + 1))
         ${options[action_index]}
@@ -87,15 +75,8 @@ menu() {
     elif [[ $number == 'q' ]]; then
         exit
     else
-        echo '输入有误'
+        _yellow '>~~~~~~~~~~~~~~~输入有误~~~~~~~~~~~~~~~~~<'
     fi
-}
-#输入有误
-inputerror() {
-    echo
-    _yellow '>~~~~~~~~~~~~~~~输入有误,脚本终止~~~~~~~~~~~~~~~~~<'
-    echo
-    exit
 }
 #安装脚本
 selfinstall() {
@@ -135,41 +116,6 @@ selfinstall() {
         fi
     fi
 }
-#卸载脚本
-removeself() {
-    _blue '开始卸载脚本'
-    rm -rf /bin/init.sh
-    rm -rf /bin/s
-    rm -rf /bin/sgit
-    _blue '卸载完成'
-}
-#脚本升级
-updateself() {
-    selfuninstall
-    _blue '拉取最新版'
-    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
-}
-#各IP地址连接数
-ipcount() {
-    echo
-    echo '   数量 ip'
-    netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
-    echo
-}
-#ssh爆破记录
-sshbaopo() {
-    lastb | grep root | awk '{print $3}' | sort | uniq
-}
-#SpeedCLI 测速
-netfast2() {
-    curl -fsSL git.io/speedtest-cli.sh | sudo bash
-    speedtest
-}
-#三网测速
-sanwang() {
-    bash <(curl -Lso- https://down.wangchao.info/sh/superspeed.sh)
-}
-
 #软件
 software() {
 
@@ -652,6 +598,27 @@ EOM
         vnstat -l -i $ens
     }
 
+    #各IP地址连接数
+    ipcount() {
+        echo
+        echo '   数量 ip'
+        netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
+        echo
+    }
+    #ssh爆破记录
+    sshbaopo() {
+        lastb | grep root | awk '{print $3}' | sort | uniq
+    }
+    #SpeedCLI 测速
+    netfast2() {
+        curl -fsSL git.io/speedtest-cli.sh | sudo bash
+        speedtest
+    }
+    #三网测速
+    sanwang() {
+        bash <(curl -Lso- https://down.wangchao.info/sh/superspeed.sh)
+    }
+
     menuname='主页/网络'
     options=("网络信息" netinfo "各IP地址连接数" ipcount "ssh爆破记录" sshbaopo "实时显示当前网速" vnstatfun "网络测速 (外网speednet)" netfast "SpeedCLI 测速" netfast2 "三网测速" sanwang "iperf3 本地测速" iperftest "配置本机网卡静态ip" staticip "启用dhcp动态获取" dhcpip "nmap 扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
 
@@ -719,7 +686,7 @@ sysset() {
             echo "source list已经写入阿里云源."
             ;;
         *)
-            inputerror
+            _yellow '>~~~~~~~~~~~~~~~输入有误~~~~~~~~~~~~~~~~~<'
             exit
             ;;
         esac
@@ -1232,6 +1199,20 @@ if [ $? == 1 ]; then
 fi
 #主页
 main() {
+    #卸载脚本
+    removeself() {
+        _blue '开始卸载脚本'
+        rm -rf /bin/init.sh
+        rm -rf /bin/s
+        rm -rf /bin/sgit
+        _blue '卸载完成'
+    }
+    #脚本升级
+    updateself() {
+        removeself
+        _blue '拉取最新版'
+        wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
+    }
     menuname='主页'
     options=("软件" software "网络" networktools "系统" sysset "其他工具" ordertools "脚本升级" updateself "脚本卸载" removeself)
     menu "${options[@]}"
