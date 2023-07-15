@@ -7,6 +7,9 @@ sinit() {
     datevar=$(date +%y%m%d%H%M%S)
     #菜单名称(默认主页)
     menuname='主页'
+
+    #父级函数名
+    parentfun=''
 }
 #字体颜色定义
 _red() {
@@ -33,6 +36,14 @@ next() {
 waitinput() {
     echo
     read -n1 -r -p "按任意键继续...(退出 Ctrl+C)"
+}
+#继续执行函数
+nextrun() {
+    #unset number
+    waitinput
+    #${parentfun}
+    main
+   
 }
 #菜单头部
 menutop() {
@@ -68,7 +79,11 @@ menu() {
     # 获取用户输入
     read -ep "请输入命令数字: " number
     if [[ $number -ge 1 && $number -le $((num_options / 2)) ]]; then
+        #找到函数名索引
         action_index=$((2 * (number - 1) + 1))
+        #函数名赋值
+        parentfun=${options[action_index]}
+        #函数执行
         ${options[action_index]}
     elif [[ $number == 0 ]]; then
         main
@@ -77,6 +92,7 @@ menu() {
     else
         _yellow '>~~~~~~~~~~~~~~~输入有误~~~~~~~~~~~~~~~~~<'
     fi
+
 }
 #安装脚本
 selfinstall() {
@@ -339,34 +355,15 @@ networktools() {
             echo "端口 $unport 已关闭"
             ufwstatus
         }
-
-        echo "1:开启ufw  2:关闭ufw  3:ufw状态  4: 添加端口  5:关闭端口"
-        until [[ $PROTOCOL_CHOICE =~ ^[1-5]$ ]]; do
-            read -rp "Protocol [1-5]: " PROTOCOL_CHOICE
-        done
-        case $PROTOCOL_CHOICE in
-        1)
-
-            ufwinstall
-            ;;
-        2)
+        ufwdisablefun() {
             ufw disable
             echo "ufw已关闭"
             ufwstatus
-            ;;
-        3)
+        }
 
-            ufwstatus
-            ;;
-        4)
-
-            ufwadd
-            ;;
-        5)
-
-            ufwclose
-            ;;
-        esac
+        menuname='主页/网络/ufw'
+        options=("开启ufw" ufwinstall "关闭ufw" ufwdisablefun "ufw状态" ufwstatus "添加端口" ufwadd "关闭端口" ufwclose)
+        menu "${options[@]}"
 
     }
 
@@ -399,21 +396,14 @@ networktools() {
             echo "----服务状态----"
             fail2ban-client status sshd
         }
-
-        echo "1.安装配置  2.查看状态"
-        until [[ $PROTOCOL_CHOICE =~ ^[1-2]$ ]]; do
-            read -rp "Protocol [1-2]: " PROTOCOL_CHOICE
-        done
-        case $PROTOCOL_CHOICE in
-        1)
-
-            installfail2ban
-            ;;
-        2)
-
+        fail2banstatusfun() {
             fail2ban-client status sshd
-            ;;
-        esac
+        }
+
+        menuname='主页/网络/fail2ban'
+        options=("安装配置" installfail2ban "查看状态" fail2banstatusfun)
+        menu "${options[@]}"
+
     }
 
     staticip() {
@@ -500,6 +490,7 @@ EOM
         echo "---------公网ip信息-----------------"
         curl cip.cc
         echo
+        
 
     }
     netfast() {
@@ -691,6 +682,7 @@ sysset() {
             ;;
         esac
     }
+    #同步时间
     synchronization_time() {
         echo "同步前的时间: $(date -R)"
         echo "同步为上海时间?"
@@ -849,36 +841,18 @@ sysset() {
         echo "环境变量:"
         env
         next
-        echo "监听端口:"
-        netstat -tunlp
-        next
         echo "当前建立的连接:"
         netstat -n | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'
-        next
-        echo "开机启动的服务:"
-        systemctl list-unit-files | grep enabled
-        echo
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>系统用户情况<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        echo "活动用户:"
-        w | tail -n +2
-        next
-        echo "系统所有用户:"
-        cut -d: -f1,2,3,4 /etc/passwd
-        next
-        echo "系统所有组:"
-        cut -d: -f1,2,3 /etc/group
-        echo
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>身份鉴别安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+
         more /etc/login.defs | grep -E "PASS_MAX_DAYS" | grep -v "#" | awk -F' ' '{if($2!=90){print ">>>密码过期天数是"$2"天,请管理员改成90天------warning"}}'
         next
         grep -i "^auth.*required.*pam_tally2.so.*$" /etc/pam.d/sshd >/dev/null
         if [ $? == 0 ]; then
             echo ">>>登入失败处理:已开启"
         else
-            echo ">>>登入失败处理:未开启,请加固登入失败锁定功能----------warning"
+            echo ">>>登入失败处理:未开启----------warning"
         fi
         echo
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>访问控制安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         echo "系统中存在以下非系统默认用户:"
         more /etc/passwd | awk -F ":" '{if($3>500){print ">>>/etc/passwd里面的"$1 "的UID为"$3",该账户非系统默认账户,请管理员确认是否为可疑账户--------warning"}}'
         next
@@ -888,7 +862,6 @@ sysset() {
         echo "系统中空口令账户:"
         awk -F: '($2=="!!") {print $1"该账户为空口令账户,请管理员确认是否为新增账户,如果为新建账户,请配置密码-------warning"}' /etc/shadow
         echo
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>安全审计<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         echo "正常情况下登录到本机30天内的所有用户的历史记录:"
         last | head -n 30
         next
@@ -943,7 +916,6 @@ sysset() {
         else
             echo ">>>/var/log/dmesg日志文件不存在--------warning"
         fi
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>入侵防范安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         echo "系统入侵行为:"
         more /var/log/secure | grep refused
         if [ $? == 0 ]; then
@@ -969,7 +941,6 @@ sysset() {
             more /var/log/secure | awk '/Failed/{print $(NF-3)}' | sort | uniq -c | awk '{print ">>>登入失败的IP和尝试次数: "$2"="$1"次---------warning";}'
         fi
         echo
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>资源控制安全<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         echo "查看是否开启了ssh服务:"
         if service sshd status | grep -E "listening on|active \(running\)"; then
             echo ">>>SSH服务已开启"
@@ -1013,6 +984,7 @@ sysset() {
         waitinput
         stress -c 1 -t 60
     }
+    #磁盘测速
     iotestspeed() {
         #io测试
         io_test() {
@@ -1047,6 +1019,7 @@ sysset() {
     #查看本机authorized_keys
     catkeys() {
         cat /root/.ssh/authorized_keys
+        nextrun
     }
     #计划任务crontab
     crontabfun() {
@@ -1108,12 +1081,14 @@ dockerfun() {
     }
     dockerimagesfun() {
         docker images
+        nextrun
     }
     dockerpsfun() {
         echo 'runing'
         docker ps
         echo '所有'
         docker ps -a
+        nextrun
     }
     opencon() {
         echo
