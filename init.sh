@@ -1,13 +1,11 @@
 #!/bin/bash
 export LANG=en_US.UTF-8
-#全局变量初始化
-sinit() {
-    version='23.07'
-    #时间变量：
+#全局变量
+glovar() {
+    version='0.2.1'
     datevar=$(date +%y%m%d%H%M%S)
     #菜单名称(默认主页)
     menuname='主页'
-
     #父级函数名
     parentfun=''
 }
@@ -32,6 +30,32 @@ _blue() {
 next() {
     printf "%-50s\n" "-" | sed 's/\s/-/g'
 }
+#字符跳动
+jumpfun() {
+    my_string=$1
+    # 循环输出每个字符
+    for ((i = 0; i < ${#my_string}; i++)); do
+        printf '\033[0;31;36m%b\033[0m' "${my_string:$i:1}"
+        sleep 0.1
+    done
+    echo
+}
+#网卡获取
+getnetcard() {
+    # 获取系统中可用的网卡名称
+    interfaces=$(ifconfig -a | sed -nE 's/^([^[:space:]]+).*$/\1/p')
+
+    # 输出供用户选择的网卡名称列表
+    PS3="请选择网卡名称： "
+    select interface in $interfaces; do
+        if [[ -n "$interface" ]]; then
+            break
+        fi
+    done
+    # 去掉网卡名称后面的冒号，并输出用户选择的网卡名称
+    interface=$(echo "$interface" | sed 's/://')
+    echo $interface
+}
 #按任意键继续
 waitinput() {
     echo
@@ -43,7 +67,7 @@ nextrun() {
     waitinput
     #${parentfun}
     main
-   
+
 }
 #菜单头部
 menutop() {
@@ -77,7 +101,7 @@ menu() {
     echo
     echo
     # 获取用户输入
-    read -ep "请输入命令数字: " number
+    read -ep "请输入命令号: " number
     if [[ $number -ge 1 && $number -le $((num_options / 2)) ]]; then
         #找到函数名索引
         action_index=$((2 * (number - 1) + 1))
@@ -94,69 +118,14 @@ menu() {
     fi
 
 }
-#安装脚本
-selfinstall() {
-    menutop
-    echo
-    _blue '  ________       '
-    _blue ' |\   ____\      '
-    _blue ' \ \  \___|_     '
-    _blue '  \ \_____  \    '
-    _blue '   \|____|\  \   '
-    _blue '     ____\_\  \  '
-    _blue '    |\_________\ '
-    _blue '    \|_________| '
-    echo
-    _blue "welcome !"
-    echo
-    read -n1 -r -p "脚本安装 (按任意键继续) ..."
-    _yellow '检查系统环境..'
-    if which s >/dev/null; then
-        _red '系统已存在s程序,停止安装,请检查!'
-        exit
-    else
-        _yellow '检查源文件..'
-        if [ -e "$(pwd)/init.sh" ]; then
-            _blue '开始安装脚本'
-            cp -f "$(pwd)/init.sh" /bin/init.sh
-            ln -s /bin/init.sh /bin/s
-            _blue '安装完成'
-            menuname='主页'
-            echo
-            _blue "你可以在任意位置使用命令 's' 运行"
-            echo
-            waitinput
-        else
-            echo "当前目录没有发现原始脚本请检查"
-            exit
-        fi
-    fi
-}
 #软件
 software() {
 
     #更新所有已安装的软件包
     aptupdatefun() {
-        echo "更新所有已安装的软件包"
+        jumpfun "更新所有已安装的软件包"
         apt-get update -y && apt-get install curl -y
         echo "更新完成"
-    }
-    #开始卸载
-    uninstallstart() {
-        echo
-        _red "开始卸载 $1"
-        echo
-        echo "关闭服务.."
-        service $1 stop
-        systemctl stop $1
-        echo
-    }
-    #结束卸载
-    uninstallend() {
-        next
-        echo
-        echo "卸载完成"
-        echo
     }
     #安装常用包
     installcomso() {
@@ -201,117 +170,88 @@ software() {
         waitinput
         curl -O https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh && chmod +x openvpn-install.sh && ./openvpn-install.sh
     }
-    #专项卸载
-    removephp() {
-        uninstallstart php
-        apt remove php -y
-        apt-get --purge remove php -y
-        apt-get --purge remove php-* -y
-        apt-get autoremove php -y
-        echo
-        echo "删除所有包含php的文件"
-        rm -rf /etc/php
-        rm -rf /etc/init.d/php
-        find /etc -name *php* -print0 | xargs -0 rm -rf
-        echo "清除dept列表"
-        apt purge $(dpkg -l | grep php | awk '{print $2}' | tr "\n" " ")
-        uninstallend
-    }
-    removenginx() {
-        uninstallstart nginx
-        apt remove nginx -y
-        apt-get --purge remove nginx -y
-        apt-get --purge remove nginx-common -y
-        apt-get --purge remove nginx-core -y
-        echo
-        echo "删除所有包含nginx的文件"
-        find / -name nginx* -print0 | xargs -0 rm -rf
-        uninstallend
-    }
-    removeapache() {
-        uninstallstart apache2
-        apt remove apache2 -y
-        apt-get --purge remove apache2 -y
-        apt-get --purge remove apache2-common -y
-        apt-get --purge remove apache2-utils -y
-        apt-get autoremove apache2
-        echo
-        echo "删除所有包含apache的文件"
-        rm -rf /etc/apache2
-        rm -rf /etc/init.d/apache2
-        find / -name apache2* -print0 | xargs -0 rm -rf
-        uninstallend
-    }
-    removedocker() {
-        docker kill $(docker ps -a -q)
-        docker rm $(docker ps -a -q)
-        docker rmi $(docker images -q)
-        uninstallstart docker
-        apt-get autoremove docker docker-ce docker-engine docker.io containerd runc
-        dpkg -l | grep docker
-        apt-get autoremove docker-ce-*
-        rm -rf /etc/systemd/system/docker.service.d
-        rm -rf /var/lib/docker
-        rm -rf /etc/docker
-        rm -rf /run/docker
-        rm -rf /var/lib/dockershim
-        umount /var/lib/docker/devicemapper
-        uninstallend
-    }
-    removev2() {
-        uninstallstart v2ray
-        update-rc.d -f v2ray remove
-        rm -rf /etc/v2ray/*
-        rm -rf /usr/bin/v2ray/*
-        rm -rf /var/log/v2ray/*
-        rm -rf /lib/systemd/system/v2ray.service
-        rm -rf /etc/init.d/v2ray
-        uninstallend
-    }
-    removemysql() {
-        uninstallstart mysql-server
-        apt-get autoremove --purge mysql-server -y
-        apt-get remove mysql-common -y
-        apt-get remove dbconfig-mysql -y
-        apt-get remove mysql-client -y
-        apt-get remove mysql-client-5.7 -y
-        apt-get remove mysql-client-core-5.7 -y
-        apt-get remove apparmor -y
-        apt-get autoremove mysql* --purge -y
-        dpkg -l | grep ^rc | awk '{print $2}' | xargs dpkg -P
-        rm /var/lib/mysql/ -R
-        rm /etc/mysql/ -R
-        uninstallend
-    }
-    #通用卸载
-    softthoremove() {
 
-        read -ep "请输入要卸载的软件名: " resoftname
-        _red "注意：将会删除关于 $resoftname 所有内容"
-        waitinput
-        uninstallstart $resoftname
-        apt remove $resoftname -y
-        apt-get --purge remove $resoftname -y
-        apt-get --purge remove $resoftname-* -y
-        echo "清除dept列表"
-        apt purge $(dpkg -l | grep $resoftname | awk '{print $2}' | tr "\n" " ")
-        echo "删除 $resoftname 的启动脚本"
-        update-rc.d -f $resoftname remove
-        echo
-        echo "删除所有包含 $resoftname 的文件"
-        rm -rf /etc/$resoftname
-        rm -rf /etc/init.d/$resoftname
-        find /etc -name *$resoftname* -print0 | xargs -0 rm -rf
-        rm -rf /usr/bin/$resoftname
-        rm -rf /var/log/$resoftname
-        rm -rf /lib/systemd/system/$resoftname.service
-        rm -rf /var/lib/$resoftname
-        rm -rf /run/$resoftname
-        uninstallend
+    removefun() {
+        #专项卸载
+        removephp() {
+            masterremove php
+        }
+        removenginx() {
+            apt-get --purge remove nginx-common -y
+            apt-get --purge remove nginx-core -y
+            masterremove nginx
+        }
+        removeapache() {
+            apt-get --purge remove apache2-common -y
+            apt-get --purge remove apache2-utils -y
+            masterremove apache2
+        }
+        removedocker() {
+            docker kill $(docker ps -a -q)
+            docker rm $(docker ps -a -q)
+            docker rmi $(docker images -q)
+            apt-get autoremove docker docker-ce docker-engine docker.io containerd runc
+            apt-get autoremove docker-ce-*
+            rm -rf /etc/systemd/system/docker.service.d
+            rm -rf /var/lib/docker
+            rm -rf /etc/docker
+            rm -rf /run/docker
+            rm -rf /var/lib/dockershim
+            umount /var/lib/docker/devicemapper
+            masterremove docker
+        }
+        removev2() {
+            masterremove v2ray
+        }
+        removemysql() {
+            apt-get remove mysql-common -y
+            apt-get remove dbconfig-mysql -y
+            apt-get remove mysql-client -y
+            apt-get remove mysql-client-5.7 -y
+            apt-get remove mysql-client-core-5.7 -y
+            apt-get remove apparmor -y
+            apt-get autoremove mysql* --purge -y
+            masterremove mysql-server
+        }
+        #彻底卸载
+        masterremove() {
+            if [ $# -eq 0 ]; then
+                resoftname=$1
+            else
+                read -ep "请输入要卸载的软件名: " resoftname
+            fi
+            _red "注意：将会删除关于 $resoftname 所有内容"
+            waitinput
+            _red "开始卸载 $resoftname"
+            echo "关闭服务.."
+            service $resoftname stop
+            systemctl stop $resoftname
+            apt remove $resoftname -y
+            apt-get --purge remove $resoftname -y
+            apt-get --purge remove $resoftname-* -y
+            echo "清除dept列表"
+            apt purge $(dpkg -l | grep $resoftname | awk '{print $2}' | tr "\n" " ")
+            echo "删除 $resoftname 的启动脚本"
+            update-rc.d -f $resoftname remove
+            echo "删除所有包含 $resoftname 的文件"
+            rm -rf /etc/$resoftname
+            rm -rf /etc/init.d/$resoftname
+            find /etc -name *$resoftname* -print0 | xargs -0 rm -rf
+            rm -rf /usr/bin/$resoftname
+            rm -rf /var/log/$resoftname
+            rm -rf /lib/systemd/system/$resoftname.service
+            rm -rf /var/lib/$resoftname
+            rm -rf /run/$resoftname
+            next
+            echo
+            _blue "卸载完成"
+        }
+        menuname='主页/软件/卸载'
+        options=("手动输入" masterremove "卸载nginx" removenginx "卸载Apache" removeapache "卸载php" removephp "卸载docker" removedocker "卸载v2ray" removev2 "卸载mysql" removemysql)
+        menu "${options[@]}"
     }
     menuname='主页/软件'
-    options=("更新源" aptupdatefun "安装常用软件" installcomso "安装xray八合一" installbaheyi "安装x-ui" installxui "安装openvpn" installopenvpn "卸载nginx" removenginx "卸载Apache" removeapache "卸载php" removephp "卸载docker" removedocker "卸载v2ray" removev2 "卸载mysql" removemysql "强力卸载软件" softthoremove)
-
+    options=("软件更新" aptupdatefun "软件卸载" removefun "安装常用包" installcomso "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn )
     menu "${options[@]}"
 }
 #网络
@@ -407,40 +347,26 @@ networktools() {
     }
 
     staticip() {
-        echo "确保原文件手工备份"
-        waitinput
-        echo "确保网卡名称ens33 还是其他"
-        ifconfig
-        read -ep "请输入网卡名称 (例:ens33 回车默认ens33): " ens
-        if [[ "$ens" = "" ]]; then
-            ens="ens33"
-        fi
-        echo "网卡为" $ens
         echo "开始备份原文件"
         cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
-        echo "原00-installer-config.yaml已备份."
-        echo "开始配置静态ip"
-        ipaddresses="errorip"
-        read -ep "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
-        until [[ "$ipaddresses" ]]; do
-            echo "$ipaddresses: 网络地址不能为空."
+        #获取网卡名称
+        ens=${getnetcard}
+        until [[ -z "$ipaddresses"  ]]; do
             read -ep "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
         done
+        until [[ -z "$gateway" ]]; do
+            read -ep "请输入网关(x.x.x.x): " gateway
+        done
+        until [[ -z "$nameservers" ]]; do
+            read -ep "请输入DNS(x.x.x.x): " nameservers
+        done
+        _red "请仔细检查配置是否正确!"
+        echo "网卡为" $ens
         echo "网络地址为:$ipaddresses"
-        echo "提示:x.x.x.x"
-        read -ep "请输入网关: " gateway
-        until [[ "$gateway" ]]; do
-            echo "$gateway: 网关不能为空."
-            read -ep "请输入网关: " gateway
-        done
         echo "网关为:$gateway"
-        echo "提示:x.x.x.x"
-        read -ep "请输入主DNS: " nameservers
-        until [[ "$nameservers" ]]; do
-            echo "$nameservers: DNS不能为空."
-            read -ep "请输入主DNS: " nameservers
-        done
         echo "DNS地址为:$nameservers "
+        waitinput
+
         cat <<EOM >/etc/netplan/00-installer-config.yaml
 # This is the network config written by 'subiquity'
 network:
@@ -453,19 +379,17 @@ network:
          nameservers:
              addresses: [$nameservers]
 EOM
-        echo "配置信息成功写入,成功切换ip 、ssh已断开,请使用设置的ip:$ipaddresses 重新登录"
+        echo "配置信息成功写入,成功切换ip 、若ssh断开,请使用设置的ip:$ipaddresses 重新登录"
         netplan apply
-        echo "配置已应用"
+        echo "ok"
     }
     dhcpip() {
         echo "开始配置DHCP"
-        echo "确保网卡名称ens33 还是其他"
-        ifconfig
-        read -ep "请输入网卡名称 (例:ens33 回车默认ens33): " ens
-        if [[ "$ens" = "" ]]; then
-            ens="ens33"
-            echo "网卡为" $ens
-        fi
+        #获取网卡名称
+        ens=${getnetcard}
+        _red "请仔细检查配置是否正确!"
+        echo "网卡为" $ens
+        waitinput
         cat <<EOM >/etc/netplan/00-installer-config.yaml
 # This is the network config written by 'subiquity'
 network:
@@ -476,22 +400,19 @@ network:
 EOM
         echo "配置信息成功写入"
         netplan apply
-        echo "DHCP已开启"
+        echo "ok"
     }
     netinfo() {
         echo
-        echo "---------本地IP信息-------------"
-        ifconfig -a
-        next
-        echo "路由表"
-        route -n
-        echo "监听端口"
-        netstat -tunlp
-        echo "---------公网ip信息-----------------"
+        jumpfun "本机IP"
+        ifconfig -a | grep "inet "
+        jumpfun "公网IP"
         curl cip.cc
+        jumpfun "路由表"
+        route -n
+        jumpfun "监听端口"
+        netstat -tunlp
         echo
-        
-
     }
     netfast() {
         echo
@@ -547,7 +468,7 @@ EOM
             ip addr show | grep "inet " | grep -v "127.0.0.1"
             echo
 
-            until [[ "$ips" ]]; do
+            until [[ -z "$ips" ]]; do
                 read -ep "请输入网段x.x.x.x/x: " ips
             done
 
@@ -555,7 +476,7 @@ EOM
         }
         nmapportcat() {
 
-            until [[ "$ip" ]]; do
+            until [[ -z "$ip" ]]; do
                 read -ep "请输入ip: " ip
             done
 
@@ -580,12 +501,8 @@ EOM
 
     vnstatfun() {
         apt-get install vnstat
-
-        ifconfig
-        read -ep "请输入网卡名称 (默认eth0): " ens
-        if [[ "$ens" = "" ]]; then
-            ens="eth0"
-        fi
+        #获取网卡名称
+        ens=${getnetcard}
         vnstat -l -i $ens
     }
 
@@ -611,7 +528,7 @@ EOM
     }
 
     menuname='主页/网络'
-    options=("网络信息" netinfo "各IP地址连接数" ipcount "ssh爆破记录" sshbaopo "实时显示当前网速" vnstatfun "网络测速 (外网speednet)" netfast "SpeedCLI 测速" netfast2 "三网测速" sanwang "iperf3 本地测速" iperftest "配置本机网卡静态ip" staticip "启用dhcp动态获取" dhcpip "nmap 扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
+    options=("网络信息" netinfo "IP连接数" ipcount "ssh爆破记录" sshbaopo "实时网速" vnstatfun "测速1" netfast "测速2" netfast2 "三网测速" sanwang "iperf3" iperftest "配置本机ip" staticip "启用dhcp" dhcpip "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
 
     menu "${options[@]}"
 }
@@ -751,7 +668,7 @@ sysset() {
     }
     #系统信息
     sysinfo() {
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>系统基本信息<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        echo
         hostname=$(uname -n)
         system=$(cat /etc/os-release | grep "^NAME" | awk -F\" '{print $2}')
         version=$(lsb_release -s -d)
@@ -768,40 +685,20 @@ sysset() {
         tcpalgorithm=$(sysctl net.ipv4.tcp_congestion_control | awk -F ' ' '{print $3}')
         echo "主机名:           $hostname"
         echo "系统名称:         $system"
-        echo "系统版本:         $version $codename"
+        _blue "系统版本:         $version $codename"
         echo "内核版本:         $kernel"
         echo "系统类型:         $platform"
-        echo "CPU型号:          $cpumodel"
+        _green "CPU型号:         $cpumodel"
         echo "CPU核数:          $cpu"
         echo "CPU缓存:          $ccache"
         if [ -n "$cpu_aes" ]; then
-            echo "AES加密指令集支持: yes"
+        _blue "AES指令集:        yes"
         fi
         echo "机器型号:         $machinemodel"
         echo "系统时间:         $date"
         echo "本机IP地址:       $address"
-        echo "tcp拥塞控制算法:   $tcpalgorithm"
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>资源使用情况<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        summemory=$(free -h | grep "Mem:" | awk '{print $2}')
-        freememory=$(free -h | grep "Mem:" | awk '{print $4}')
-        usagememory=$(free -h | grep "Mem:" | awk '{print $3}')
-        uptime=$(uptime | awk '{print $2" "$3" "$4" "$5}' | sed 's/,$//g')
-        loadavg=$(uptime | awk '{print $9" "$10" "$11" "$12" "$13}')
-        echo "总内存大小:           $summemory"
-        echo "已使用内存大小:       $usagememory"
-        echo "可使用内存大小:       $freememory"
-        echo "系统运行时间:         $uptime"
-        echo "系统负载:            $loadavg"
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>安全审计<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        echo "正常情况下登录到本机30天内的所有用户的历史记录:"
-        last | head -n 30
-        echo "系统中关键文件修改时间:"
-        ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
-        echo
-        _blue '开机启动的服务'
-        systemctl list-unit-files | grep enabled
-        _blue '/etc/rc.local 和开机启动脚本'
-        cat /etc/rc.local
+        _blue "拥塞控制:         $tcpalgorithm"
+        echo 
     }
     diskinfo() {
         echo "\n分区信息:"
@@ -824,6 +721,16 @@ sysset() {
         echo
     }
     systemcheck() {
+        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>安全审计<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        echo "正常情况下登录到本机30天内的所有用户的历史记录:"
+        last | head -n 30
+        echo "系统中关键文件修改时间:"
+        ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
+        echo
+        _blue '开机启动的服务'
+        systemctl list-unit-files | grep enabled
+        _blue '/etc/rc.local 和开机启动脚本'
+        cat /etc/rc.local
         echo "僵尸进程:"
         ps -ef | grep zombie | grep -v grep
         if [ $? == 1 ]; then
@@ -1035,7 +942,7 @@ sysset() {
     }
 
     menuname='主页/系统'
-    options=("换阿里源" huanyuanfun "同步时间" synchronization_time "命令行中文支持" supportcn "密码和密钥root登录" openroot "仅密钥root登录" sshpubonly "生成ssh密钥对" sshgetpub "写入ssh公钥(常用)" sshsetpub "查看本机authorized_keys" catkeys "系统信息" sysinfo "磁盘信息" diskinfo "计划任务crontab" crontabfun "系统检查" systemcheck "cpu压力测试" cputest "磁盘测速" iotestspeed "配置开机运行脚本 rc.local" rclocalfun)
+    options=("系统信息" sysinfo "磁盘信息"  diskinfo "写入ssh公钥" sshsetpub "仅密钥root" sshpubonly  "换阿里源" huanyuanfun "同步时间" synchronization_time "tty中文" supportcn "root登录" openroot  "生成密钥对" sshgetpub  "查看已存在ssh公钥" catkeys  "计划任务" crontabfun "配置rc.local" rclocalfun "系统检查" systemcheck "cpu压测" cputest "磁盘测速" iotestspeed )
 
     menu "${options[@]}"
 
@@ -1047,7 +954,7 @@ dockerfun() {
         echo
         docker images
         echo
-        read -ep "请输入镜像包名或idREPOSITORY: " dcimage
+        read -ep "请输入镜像包名或id REPOSITORY: " dcimage
         read -ep "请输入容器端口: " conport
         read -ep "请输入宿主机端口: " muport
         read -ep "请输入执行参数: " param
@@ -1058,13 +965,10 @@ dockerfun() {
         echo
         docker images
         echo
-        read -ep "请输入镜像包名或idREPOSITORY: " dcimage
+        read -ep "请输入镜像包名或id REPOSITORY: " dcimage
         read -ep "请输入容器端口: " conport
         read -ep "请输入宿主机端口: " muport
-        read -ep "请输入执行参数(默认/bin/bash): " param
-        if [[ "$param" = "" ]]; then
-            param="/bin/bash"
-        fi
+        read -ep "请输入执行参数(默认/bin/bash): " -i '/bin/bash' param
         docker run -it -p $muport:$conport $dcimage $param
         echo "$dcimage 后台运行中"
     }
@@ -1073,10 +977,7 @@ dockerfun() {
         docker ps
         echo
         read -ep "请输入容器名或id: " containerd
-        read -ep "请输入执行参数(默认/bin/bash): " param
-        if [[ "$param" = "" ]]; then
-            param="/bin/bash"
-        fi
+        read -ep "请输入执行参数(默认/bin/bash): " -i '/bin/bash' param
         docker exec -it $containerd $param
     }
     dockerimagesfun() {
@@ -1163,7 +1064,7 @@ ordertools() {
     menu "${options[@]}"
 }
 #全局变量初始化
-sinit
+glovar
 #清屏
 clear
 #检查脚本是否已安装(/bin/init.sh存在?)
@@ -1174,6 +1075,46 @@ if [ $? == 1 ]; then
 fi
 #主页
 main() {
+    #安装脚本
+    selfinstall() {
+        menutop
+        echo
+        _blue '  ________       '
+        _blue ' |\   ____\      '
+        _blue ' \ \  \___|_     '
+        _blue '  \ \_____  \    '
+        _blue '   \|____|\  \   '
+        _blue '     ____\_\  \  '
+        _blue '    |\_________\ '
+        _blue '    \|_________| '
+        echo
+        _blue "welcome!"
+        jumpfun "海内存知己,天涯若比邻"
+        echo
+        read -n1 -r -p "开始安装脚本 (按任意键继续) ..."
+        _yellow '检查系统环境..'
+        if which s >/dev/null; then
+            _red '系统已存在s程序,停止安装,请检查!'
+            exit
+        else
+            _yellow '检查源文件..'
+            if [ -e "$(pwd)/init.sh" ]; then
+                jumpfun '开始安装脚本'
+                cp -f "$(pwd)/init.sh" /bin/init.sh
+                ln -s /bin/init.sh /bin/s
+                jumpfun "很快就好"
+                _blue '安装完成'
+                menuname='主页'
+                echo
+                _blue "你可以在任意位置使用命令 's' 运行"
+                echo
+                waitinput
+            else
+                echo "当前目录没有发现原始脚本请检查"
+                exit
+            fi
+        fi
+    }
     #卸载脚本
     removeself() {
         _blue '开始卸载脚本'
@@ -1185,11 +1126,11 @@ main() {
     #脚本升级
     updateself() {
         removeself
-        _blue '拉取最新版'
+        jumpfun '下载github最新版'
         wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
     }
     menuname='主页'
-    options=("软件" software "网络" networktools "系统" sysset "其他工具" ordertools "脚本升级" updateself "脚本卸载" removeself)
+    options=("软件管理" software "网络管理" networktools "系统管理" sysset "其他工具" ordertools "脚本升级" updateself "脚本卸载" removeself)
     menu "${options[@]}"
 }
 main
