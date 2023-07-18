@@ -270,9 +270,9 @@ software() {
         #彻底卸载
         masterremove() {
             if [ $# -eq 0 ]; then
-                resoftname=$1
-            else
                 read -ep "请输入要卸载的软件名: " resoftname
+            else
+                resoftname=$1
             fi
             _red "注意：将会删除关于 $resoftname 所有内容"
             waitinput
