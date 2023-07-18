@@ -69,6 +69,60 @@ nextrun() {
     main
 
 }
+#安装脚本
+selfinstall() {
+    menutop
+    echo
+    _blue '  ________       '
+    _blue ' |\   ____\      '
+    _blue ' \ \  \___|_     '
+    _blue '  \ \_____  \    '
+    _blue '   \|____|\  \   '
+    _blue '     ____\_\  \  '
+    _blue '    |\_________\ '
+    _blue '    \|_________| '
+    echo
+    _blue "welcome!"
+    jumpfun "海内存知己,天涯若比邻"
+    echo
+    read -n1 -r -p "开始安装脚本 (按任意键继续) ..."
+    _yellow '检查系统环境..'
+    if which s >/dev/null; then
+        _red '系统已存在s程序,停止安装,请检查!'
+        exit
+    else
+        _yellow '检查源文件..'
+        if [ -e "$(pwd)/init.sh" ]; then
+            jumpfun '开始安装脚本'
+            cp -f "$(pwd)/init.sh" /bin/init.sh
+            ln -s /bin/init.sh /bin/s
+            jumpfun "很快就好"
+            _blue '安装完成'
+            menuname='主页'
+            echo
+            _blue "你可以在任意位置使用命令 's' 运行"
+            echo
+            waitinput
+        else
+            echo "当前目录没有发现原始脚本请检查"
+            exit
+        fi
+    fi
+}
+#卸载脚本
+removeself() {
+    _blue '开始卸载脚本'
+    rm -rf /bin/init.sh
+    rm -rf /bin/s
+    rm -rf /bin/sgit
+    _blue '卸载完成'
+}
+#脚本升级
+updateself() {
+    removeself
+    jumpfun '下载github最新版'
+    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
+}
 #菜单头部
 menutop() {
     which init.sh >/dev/null 2>&1
@@ -251,7 +305,7 @@ software() {
         menu "${options[@]}"
     }
     menuname='主页/软件'
-    options=("软件更新" aptupdatefun "软件卸载" removefun "安装常用包" installcomso "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn )
+    options=("软件更新" aptupdatefun "软件卸载" removefun "安装常用包" installcomso "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
     menu "${options[@]}"
 }
 #网络
@@ -351,7 +405,7 @@ networktools() {
         cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
         #获取网卡名称
         ens=${getnetcard}
-        until [[ -z "$ipaddresses"  ]]; do
+        until [[ -z "$ipaddresses" ]]; do
             read -ep "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
         done
         until [[ -z "$gateway" ]]; do
@@ -692,13 +746,13 @@ sysset() {
         echo "CPU核数:          $cpu"
         echo "CPU缓存:          $ccache"
         if [ -n "$cpu_aes" ]; then
-        _blue "AES指令集:        yes"
+            _blue "AES指令集:        yes"
         fi
         echo "机器型号:         $machinemodel"
         echo "系统时间:         $date"
         echo "本机IP地址:       $address"
         _blue "拥塞控制:         $tcpalgorithm"
-        echo 
+        echo
     }
     diskinfo() {
         echo "\n分区信息:"
@@ -942,7 +996,7 @@ sysset() {
     }
 
     menuname='主页/系统'
-    options=("系统信息" sysinfo "磁盘信息"  diskinfo "写入ssh公钥" sshsetpub "仅密钥root" sshpubonly  "换阿里源" huanyuanfun "同步时间" synchronization_time "tty中文" supportcn "root登录" openroot  "生成密钥对" sshgetpub  "查看已存在ssh公钥" catkeys  "计划任务" crontabfun "配置rc.local" rclocalfun "系统检查" systemcheck "cpu压测" cputest "磁盘测速" iotestspeed )
+    options=("系统信息" sysinfo "磁盘信息" diskinfo "写入ssh公钥" sshsetpub "仅密钥root" sshpubonly "换阿里源" huanyuanfun "同步时间" synchronization_time "tty中文" supportcn "root登录" openroot "生成密钥对" sshgetpub "查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "系统检查" systemcheck "cpu压测" cputest "磁盘测速" iotestspeed)
 
     menu "${options[@]}"
 
@@ -1075,60 +1129,7 @@ if [ $? == 1 ]; then
 fi
 #主页
 main() {
-    #安装脚本
-    selfinstall() {
-        menutop
-        echo
-        _blue '  ________       '
-        _blue ' |\   ____\      '
-        _blue ' \ \  \___|_     '
-        _blue '  \ \_____  \    '
-        _blue '   \|____|\  \   '
-        _blue '     ____\_\  \  '
-        _blue '    |\_________\ '
-        _blue '    \|_________| '
-        echo
-        _blue "welcome!"
-        jumpfun "海内存知己,天涯若比邻"
-        echo
-        read -n1 -r -p "开始安装脚本 (按任意键继续) ..."
-        _yellow '检查系统环境..'
-        if which s >/dev/null; then
-            _red '系统已存在s程序,停止安装,请检查!'
-            exit
-        else
-            _yellow '检查源文件..'
-            if [ -e "$(pwd)/init.sh" ]; then
-                jumpfun '开始安装脚本'
-                cp -f "$(pwd)/init.sh" /bin/init.sh
-                ln -s /bin/init.sh /bin/s
-                jumpfun "很快就好"
-                _blue '安装完成'
-                menuname='主页'
-                echo
-                _blue "你可以在任意位置使用命令 's' 运行"
-                echo
-                waitinput
-            else
-                echo "当前目录没有发现原始脚本请检查"
-                exit
-            fi
-        fi
-    }
-    #卸载脚本
-    removeself() {
-        _blue '开始卸载脚本'
-        rm -rf /bin/init.sh
-        rm -rf /bin/s
-        rm -rf /bin/sgit
-        _blue '卸载完成'
-    }
-    #脚本升级
-    updateself() {
-        removeself
-        jumpfun '下载github最新版'
-        wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
-    }
+
     menuname='主页'
     options=("软件管理" software "网络管理" networktools "系统管理" sysset "其他工具" ordertools "脚本升级" updateself "脚本卸载" removeself)
     menu "${options[@]}"
