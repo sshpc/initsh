@@ -114,7 +114,6 @@ removeself() {
     _blue '开始卸载脚本'
     rm -rf /bin/init.sh
     rm -rf /bin/s
-    rm -rf /bin/sgit
     _blue '卸载完成'
 }
 #脚本升级
@@ -404,7 +403,7 @@ networktools() {
         echo "开始备份原文件"
         cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
         #获取网卡名称
-        ens=${getnetcard}
+        ens=$(getnetcard)
         until [[ -z "$ipaddresses" ]]; do
             read -ep "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
         done
@@ -440,7 +439,7 @@ EOM
     dhcpip() {
         echo "开始配置DHCP"
         #获取网卡名称
-        ens=${getnetcard}
+        ens=$(getnetcard)
         _red "请仔细检查配置是否正确!"
         echo "网卡为" $ens
         waitinput
@@ -556,8 +555,7 @@ EOM
     vnstatfun() {
         apt-get install vnstat
         #获取网卡名称
-        ens=${getnetcard}
-        vnstat -l -i $ens
+        vnstat -l -i $(getnetcard)
     }
 
     #各IP地址连接数
@@ -1099,18 +1097,22 @@ ordertools() {
     }
     #安装git便捷提交
     igitcommiteasy() {
-        if which git >/dev/null; then
+        _yellow '检查系统环境..'
+        if ! command -v git &>/dev/null; then
+            echo "Git没有安装"
             _blue "Git is already installed"
+        elif which sgit >/dev/null; then
+            _red '系统已存在sgit程序,停止安装,请检查!'
+            exit
+        else
             touch /bin/sgit
             chmod +x /bin/sgit
             echo 'git add . && git commit -m "`date +%y%m%d%H%M%S`" && git push' >/bin/sgit
             _blue '安装完成'
             echo
-            echo '现在使用sgit命令 完成git add commit +时间字符串 push 提交  其他git命令不支持 请使用原生命令'
+            echo '如卸载删掉/bin/sgit 即可'
+            echo '现在使用sgit命令 完成git add commit +时间字符串 push 提交'
             echo
-        else
-            echo "Git没有安装"
-            exit
         fi
     }
     menuname='主页/其他工具'
