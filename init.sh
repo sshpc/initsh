@@ -528,12 +528,10 @@ EOM
             nmap -sP $ips
         }
         nmapportcat() {
-
-            until [[ -z "$ip" ]]; do
-                read -ep "请输入ip: " ip
-            done
-
-            nmap $ip
+            
+            read -ep "请输入ip: " ip
+            read -ep "请输入端口(1-65535): " port
+            nmap "$ip" -p "$port"
         }
 
         echo "1.主机探测  2.端口扫描"
