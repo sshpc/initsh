@@ -53,7 +53,7 @@ wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x 
 # Ubuntu初始化&工具脚本
 # Author:SSHPC <https://github.com/sshpc>
 
->~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v0.2.1
+>~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:vx.x.x
 
 当前菜单: 主页 
 

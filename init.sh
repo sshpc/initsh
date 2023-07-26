@@ -2,7 +2,7 @@
 export LANG=en_US.UTF-8
 #全局变量
 glovar() {
-    version='0.2.1'
+    version='23.07.26'
     datevar=$(date +%y%m%d%H%M%S)
     #菜单名称(默认主页)
     menuname='主页'
@@ -141,9 +141,20 @@ menu() {
     menutop
     options=("$@")
     num_options=${#options[@]}
+    # 计算数组中的字符最大长度
+    max_len=0
+    for ((i = 0; i < num_options; i++)); do
+        # 获取当前字符串的长度
+        str_len=${#options[i]}
+
+        # 更新最大长度
+        if ((str_len > max_len)); then
+            max_len=$str_len
+        fi
+    done
     # 渲染菜单
     for ((i = 0; i < num_options; i += 4)); do
-        printf "$((i / 2 + 1)): ${options[i]}           "
+        printf "%s%*s  " "$((i / 2 + 1)): ${options[i]}" $((max_len - ${#options[i]})) ""
         if [[ "${options[i + 2]}" != "" ]]; then printf "$((i / 2 + 2)): ${options[i + 2]}"; fi
         echo
         echo
@@ -528,7 +539,7 @@ EOM
             nmap -sP $ips
         }
         nmapportcat() {
-            
+
             read -ep "请输入ip: " ip
             read -ep "请输入端口(1-65535): " port
             nmap "$ip" -p "$port"
