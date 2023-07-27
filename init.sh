@@ -8,6 +8,13 @@ glovar() {
     menuname='主页'
     #父级函数名
     parentfun=''
+    ipaddresses=''
+    gateway=''
+    nameservers=''
+    port=''
+    unport=''
+    ips=''
+
 }
 #字体颜色定义
 _red() {
@@ -191,6 +198,15 @@ software() {
         apt-get update -y && apt-get install curl -y
         echo "更新完成"
     }
+    #修复更新
+    configureaptfun() {
+        sudo killall apt apt-get
+        sudo rm /var/cache/apt/archives/lock
+        sudo rm /var/lib/dpkg/lock*
+        sudo rm /var/lib/apt/lists/lock
+        sudo dpkg --configure -a
+        sudo apt update
+    }
     #安装常用包
     installcomso() {
         echo "开始异步安装.."
@@ -315,7 +331,7 @@ software() {
         menu "${options[@]}"
     }
     menuname='主页/软件'
-    options=("软件更新" aptupdatefun "软件卸载" removefun "安装常用包" installcomso "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
+    options=("软件更新" aptupdatefun "修复更新" configureaptfun "软件卸载" removefun "安装常用包" installcomso "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
     menu "${options[@]}"
 }
 #网络
@@ -337,7 +353,7 @@ networktools() {
         }
         ufwadd() {
             read -ep "请输入端口号 (0-65535): " port
-            until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
+            until [[ -n "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
                 echo "$port: 无效端口."
                 read -ep "请输入端口号 (0-65535): " port
             done
@@ -351,7 +367,7 @@ networktools() {
         }
         ufwclose() {
             read -ep "请输入端口号 (0-65535): " unport
-            until [[ -z "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
+            until [[ -n "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
                 echo "$unport: 无效端口."
                 read -ep "请输入端口号 (0-65535): " unport
             done
@@ -415,13 +431,14 @@ networktools() {
         cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
         #获取网卡名称
         ens=$(getnetcard)
-        until [[ -z "$ipaddresses" ]]; do
+
+        until [[ -n "$ipaddresses" ]]; do
             read -ep "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
         done
-        until [[ -z "$gateway" ]]; do
+        until [[ -n "$gateway" ]]; do
             read -ep "请输入网关(x.x.x.x): " gateway
         done
-        until [[ -z "$nameservers" ]]; do
+        until [[ -n "$nameservers" ]]; do
             read -ep "请输入DNS(x.x.x.x): " nameservers
         done
         _red "请仔细检查配置是否正确!"
@@ -532,7 +549,7 @@ EOM
             ip addr show | grep "inet " | grep -v "127.0.0.1"
             echo
 
-            until [[ -z "$ips" ]]; do
+            until [[ -n "$ips" ]]; do
                 read -ep "请输入网段x.x.x.x/x: " ips
             done
 
