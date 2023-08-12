@@ -2,7 +2,7 @@
 export LANG=en_US.UTF-8
 #全局变量
 glovar() {
-    version='23.07.26'
+    version='23.08'
     datevar=$(date +%y%m%d%H%M%S)
     #菜单名称(默认主页)
     menuname='主页'
@@ -90,7 +90,6 @@ selfinstall() {
     _blue '    \|_________| '
     echo
     _blue "welcome!"
-    jumpfun "海内存知己,天涯若比邻"
     echo
     read -n1 -r -p "开始安装脚本 (按任意键继续) ..."
     _yellow '检查系统环境..'
@@ -103,7 +102,7 @@ selfinstall() {
             jumpfun '开始安装脚本'
             cp -f "$(pwd)/init.sh" /bin/init.sh
             ln -s /bin/init.sh /bin/s
-            jumpfun "很快就好"
+
             _blue '安装完成'
             menuname='主页'
             echo
@@ -195,11 +194,16 @@ software() {
     #更新所有已安装的软件包
     aptupdatefun() {
         jumpfun "更新所有已安装的软件包"
+        dpkg --configure -a
+        if [[ -n $(pgrep -f "apt") ]]; then
+            pgrep -f apt | xargs kill -9
+        fi
         apt-get update -y && apt-get install curl -y
         echo "更新完成"
     }
     #修复更新
     configureaptfun() {
+        
         sudo killall apt apt-get
         sudo rm /var/cache/apt/archives/lock
         sudo rm /var/lib/dpkg/lock*
@@ -331,7 +335,7 @@ software() {
         menu "${options[@]}"
     }
     menuname='主页/软件'
-    options=("软件更新" aptupdatefun "修复更新" configureaptfun "软件卸载" removefun "安装常用包" installcomso "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
+    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "软件卸载" removefun "安装常用包" installcomso "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
     menu "${options[@]}"
 }
 #网络
@@ -690,39 +694,15 @@ sysset() {
         systemctl restart rsyslog.service cron.service
         echo "当前系统时间: $(date -R)"
     }
-    openroot() {
-        echo "确保root远程权限未开"
-        waitinput
-        echo "开始备份原文件sshd_config"
-        cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
-        echo "原文件sshd_config已备份."
-        echo "port 22" >>/etc/ssh/sshd_config
-        echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
-        echo "PasswordAuthentication yes" >>/etc/ssh/sshd_config
-        echo "重启服务中"
-        service sshd restart
-        echo "ok"
-
-    }
     sshpubonly() {
-        echo "开始备份原文件sshd_config"
+        echo "备份原文件Back up the sshd_config"
         cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
-        echo "原文件sshd_config已备份."
         echo "port 22" >>/etc/ssh/sshd_config
         echo "PermitRootLogin yes" >>/etc/ssh/sshd_config
         echo "PasswordAuthentication no" >>/etc/ssh/sshd_config
-        echo "重启服务中"
+        _blue "重启服务Restart service"
         service sshd restart
-        echo "ok"
-    }
-    #tty中文支持
-    supportcn() {
-        echo
-        apt-get install zhcon -y
-        adduser $(whoami) video
-        zhcon --utf8
-        echo
-        echo "Please enter 'zhcon --utf8' "
+        jumpfun "ok"
     }
     #生成ssh密钥对
     sshgetpub() {
@@ -737,11 +717,11 @@ sysset() {
     }
     #写入其他ssh公钥
     sshsetpub() {
-        echo "请填入ssh公钥"
-        read -ep "请粘贴至命令行回车: " sshpub
+        echo "请填入ssh公钥 (Write into /root/.ssh/authorized_keys)"
+        read -ep "请粘贴至命令行回车(Please paste and enter): " sshpub
         echo -e $sshpub >>/root/.ssh/authorized_keys
         echo
-        echo "ssh公钥写入成功"
+        echo "ssh公钥写入成功Write success"
         echo
     }
     #系统信息
@@ -1020,7 +1000,7 @@ sysset() {
     }
 
     menuname='主页/系统'
-    options=("系统信息" sysinfo "磁盘信息" diskinfo "写入ssh公钥" sshsetpub "仅密钥root" sshpubonly "换阿里源" huanyuanfun "同步时间" synchronization_time "tty中文" supportcn "root登录" openroot "生成密钥对" sshgetpub "查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "系统检查" systemcheck "cpu压测" cputest "磁盘测速" iotestspeed)
+    options=("sysinfo系统信息" sysinfo "磁盘信息" diskinfo "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "换阿里源" huanyuanfun "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "系统检查" systemcheck "cpu压测" cputest "磁盘测速" iotestspeed)
 
     menu "${options[@]}"
 
@@ -1159,7 +1139,7 @@ fi
 main() {
 
     menuname='主页'
-    options=("软件管理" software "网络管理" networktools "系统管理" sysset "其他工具" ordertools "脚本升级" updateself "脚本卸载" removeself)
+    options=("software软件管理" software "network网络管理" networktools "system系统管理" sysset "ordertools其他工具" ordertools "updateself脚本升级" updateself "removeself脚本卸载" removeself)
     menu "${options[@]}"
 }
 main

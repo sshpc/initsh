@@ -57,11 +57,11 @@ wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x 
 
 当前菜单: 主页 
 
-1: 软件管理           2: 网络管理
+1: software软件管理    2: network网络管理
 
-3: 系统管理           4: 其他工具
+3: system系统管理      4: ordertools其他工具
 
-5: 脚本升级           6: 脚本卸载
+5: updateself脚本升级  6: removeself脚本卸载
 
 q: 退出  
 
