@@ -334,8 +334,18 @@ software() {
         options=("手动输入" masterremove "卸载nginx" removenginx "卸载Apache" removeapache "卸载php" removephp "卸载docker" removedocker "卸载v2ray" removev2 "卸载mysql" removemysql)
         menu "${options[@]}"
     }
+
+    installbtop(){
+        apt install snap -y
+        apt install snapd -y
+        snap install btop
+        btop
+    }
+
+
+
     menuname='主页/软件'
-    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "软件卸载" removefun "安装常用包" installcomso "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
+    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
     menu "${options[@]}"
 }
 #网络
@@ -521,7 +531,10 @@ EOM
             until [[ "$serversip" ]]; do
                 read -ep "请输入服务器ip: " serversip
             done
-
+            _blue '默认udp  手动执行'
+            next
+           _yellow "iperf3 -u -c $serversip -b 2000M -t 40"
+            next
             iperf3 -u -c $serversip -b 2000M -t 40
         }
 
