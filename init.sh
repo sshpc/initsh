@@ -40,10 +40,11 @@ next() {
 #字符跳动
 jumpfun() {
     my_string=$1
+    delay=${2:-0.1} # 设置延迟时间，默认为0.1秒
     # 循环输出每个字符
     for ((i = 0; i < ${#my_string}; i++)); do
         printf '\033[0;31;36m%b\033[0m' "${my_string:$i:1}"
-        sleep 0.1
+        sleep "$delay"
     done
     echo
 }
@@ -89,28 +90,34 @@ selfinstall() {
     _blue '    |\_________\ '
     _blue '    \|_________| '
     echo
-    _blue "welcome!"
+    jumpfun "welcome to use" 0.04
     echo
-    read -n1 -r -p "开始安装脚本 (按任意键继续) ..."
-    _yellow '检查系统环境..'
+    _yellow '检查系统环境'
+    echo
     if which s >/dev/null; then
+        echo
         _red '系统已存在s程序,停止安装,请检查!'
         exit
     else
-        _yellow '检查源文件..'
+        _yellow '检查文件'
+        echo
         if [ -e "$(pwd)/init.sh" ]; then
             jumpfun '开始安装脚本'
             cp -f "$(pwd)/init.sh" /bin/init.sh
             ln -s /bin/init.sh /bin/s
-
-            _blue '安装完成'
-            menuname='主页'
             echo
-            _blue "你可以在任意位置使用命令 's' 运行"
+            jumpfun '初始化' 0.03
+            
+            menuname='主页'
+            jumpfun '###########################' 0.01
+            echo
+            _blue '安装完成'
+            echo
+            _blue "提示：你可以在任意位置使用命令 's' 再次运行"
             echo
             waitinput
         else
-            echo "当前目录没有发现原始脚本请检查"
+            echo "没有文件"
             exit
         fi
     fi
@@ -124,9 +131,18 @@ removeself() {
 }
 #脚本升级
 updateself() {
-    removeself
-    jumpfun '下载github最新版'
-    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && ./init.sh
+
+    _blue '下载github最新版'
+    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh
+    # 检查上一条命令的退出状态码
+    if [ $? -eq 0 ]; then
+        removeself
+        chmod +x ./init.sh && ./init.sh
+
+    else
+        _red "下载失败,检查网络"
+    fi
+
 }
 #菜单头部
 menutop() {
@@ -193,17 +209,17 @@ software() {
 
     #更新所有已安装的软件包
     aptupdatefun() {
-        jumpfun "更新所有已安装的软件包"
+        jumpfun "更新所有软件包" 0.02
         dpkg --configure -a
         if [[ -n $(pgrep -f "apt") ]]; then
             pgrep -f apt | xargs kill -9
         fi
         apt-get update -y && apt-get install curl -y
-        echo "更新完成"
+        jumpfun "更新完成" 0.02
     }
     #修复更新
     configureaptfun() {
-        
+
         sudo killall apt apt-get
         sudo rm /var/cache/apt/archives/lock
         sudo rm /var/lib/dpkg/lock*
@@ -335,14 +351,12 @@ software() {
         menu "${options[@]}"
     }
 
-    installbtop(){
+    installbtop() {
         apt install snap -y
         apt install snapd -y
         snap install btop
         btop
     }
-
-
 
     menuname='主页/软件'
     options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
@@ -499,13 +513,13 @@ EOM
     }
     netinfo() {
         echo
-        jumpfun "本机IP"
+        jumpfun "本机IP" 0.04
         ifconfig -a | grep "inet "
-        jumpfun "公网IP"
+        jumpfun "公网IP" 0.04
         curl cip.cc
-        jumpfun "路由表"
+        jumpfun "路由表" 0.04
         route -n
-        jumpfun "监听端口"
+        jumpfun "监听端口" 0.04
         netstat -tunlp
         echo
     }
@@ -533,7 +547,7 @@ EOM
             done
             _blue '默认udp  手动执行'
             next
-           _yellow "iperf3 -u -c $serversip -b 2000M -t 40"
+            _yellow "iperf3 -u -c $serversip -b 2000M -t 40"
             next
             iperf3 -u -c $serversip -b 2000M -t 40
         }
@@ -667,7 +681,7 @@ sysset() {
         menutop
         echo "检测你的系统版本为:"
         lsb_release -a
-        echo "选择你的Ubuntu版本(其他版本请手动换源)"
+        echo "选择你的Ubuntu版本"
         echo "1:Ubuntu 18.04(bionic)    2:Ubuntu 20.04(focal)  3:Ubuntu 22.04(jammy)"
         read -ep "请输入命令数字: " sourcesnumber
         echo "开始备份原列表"
