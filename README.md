@@ -3,7 +3,7 @@
 ## 一、介绍
 
 1. 交互式数字操作 [查看示例](#2首次运行会直接安装)
-2. 建议Ubuntu 1804+、 Debian 10+
+2. Ubuntu 1804+ (建议)、 Debian 10+ 
 
 > 后续支持其他Linux发行版
 
@@ -11,7 +11,7 @@
 
 * 一键换阿里源
 * 配置物理机静态ip，dhcp
-* 软件彻底卸载
+* 软件暴力卸载
 * 系统、网络、磁盘、硬件信息查看
 * cpu压力测试，磁盘测速，外网测网速
 * 同步系统时间
@@ -50,9 +50,6 @@ wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x 
 #### 主页
 
 ```sh
-# Ubuntu初始化&工具脚本
-# Author:SSHPC <https://github.com/sshpc>
-
 >~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:vx.x.x
 
 当前菜单: 主页 

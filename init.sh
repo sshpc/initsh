@@ -15,6 +15,7 @@ glovar() {
     unport=''
     ips=''
 
+    clear
 }
 #字体颜色定义
 _red() {
@@ -37,10 +38,10 @@ _blue() {
 next() {
     printf "%-50s\n" "-" | sed 's/\s/-/g'
 }
-#字符跳动
+#字符跳动 (参数：字符串 间隔时间s，默认为0.1秒)
 jumpfun() {
     my_string=$1
-    delay=${2:-0.1} # 设置延迟时间，默认为0.1秒
+    delay=${2:-0.1}
     # 循环输出每个字符
     for ((i = 0; i < ${#my_string}; i++)); do
         printf '\033[0;31;36m%b\033[0m' "${my_string:$i:1}"
@@ -48,22 +49,7 @@ jumpfun() {
     done
     echo
 }
-#网卡获取
-getnetcard() {
-    # 获取系统中可用的网卡名称
-    interfaces=$(ifconfig -a | sed -nE 's/^([^[:space:]]+).*$/\1/p')
 
-    # 输出供用户选择的网卡名称列表
-    PS3="请选择网卡名称： "
-    select interface in $interfaces; do
-        if [[ -n "$interface" ]]; then
-            break
-        fi
-    done
-    # 去掉网卡名称后面的冒号，并输出用户选择的网卡名称
-    interface=$(echo "$interface" | sed 's/://')
-    echo $interface
-}
 #按任意键继续
 waitinput() {
     echo
@@ -80,45 +66,53 @@ nextrun() {
 #安装脚本
 selfinstall() {
     menutop
-    echo
-    _blue '  ________       '
-    _blue ' |\   ____\      '
-    _blue ' \ \  \___|_     '
-    _blue '  \ \_____  \    '
-    _blue '   \|____|\  \   '
-    _blue '     ____\_\  \  '
-    _blue '    |\_________\ '
-    _blue '    \|_________| '
-    echo
-    jumpfun "welcome to use" 0.04
+    secho() {
+        echo
+        _green '   ________       '
+        _green '  |\   ____\      '
+        _green '  \ \  \___|_     '
+        _green '   \ \_____  \    '
+        _green '    \|____|\  \   '
+        _green '      ____\_\  \  '
+        _green '     |\_________\ '
+        _green '     \|_________| '
+        echo
+    }
+    secho
+    jumpfun "welcome" 0.06
     echo
     _yellow '检查系统环境'
     echo
     if which s >/dev/null; then
-        echo
-        _red '系统已存在s程序,停止安装,请检查!'
+        
+        _red '检测到已存在s程序，位置：/bin/s 请检查!'
         exit
     else
-        _yellow '检查文件'
-        echo
+        
+        menuname='主页'
         if [ -e "$(pwd)/init.sh" ]; then
-            jumpfun '开始安装脚本'
+            jumpfun '开始安装脚本 ' 0.04
+            echo
+            jumpfun '初始化 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' 0.02
+
             cp -f "$(pwd)/init.sh" /bin/init.sh
             ln -s /bin/init.sh /bin/s
+            clear
+            secho
             echo
-            jumpfun '初始化' 0.03
-            
-            menuname='主页'
-            jumpfun '###########################' 0.01
+            echo '文件位置： /bin/init.sh  /bin/s'
             echo
-            _blue '安装完成'
+            _green '成功安装'
             echo
-            _blue "提示：你可以在任意位置使用命令 's' 再次运行"
+            _blue "提示：再次执行任意位置 's' "
+
             echo
             waitinput
+            clear
         else
-            echo "没有文件"
-            exit
+            _yellow "没有此脚本文件，跳过安装，仅运行"
+            waitinput
+            clear
         fi
     fi
 }
@@ -140,16 +134,12 @@ updateself() {
         chmod +x ./init.sh && ./init.sh
 
     else
-        _red "下载失败,检查网络"
+        _red "下载失败,请重试"
     fi
 
 }
 #菜单头部
 menutop() {
-    which init.sh >/dev/null 2>&1
-    if [ $? == 0 ]; then
-        clear
-    fi
     _green '# Ubuntu初始化&工具脚本'
     _green '# Author:SSHPC <https://github.com/sshpc>'
     echo
@@ -198,6 +188,7 @@ menu() {
     elif [[ $number == 0 ]]; then
         main
     elif [[ $number == 'q' ]]; then
+        echo
         exit
     else
         _yellow '>~~~~~~~~~~~~~~~输入有误~~~~~~~~~~~~~~~~~<'
@@ -364,6 +355,23 @@ software() {
 }
 #网络
 networktools() {
+
+    #获取网卡
+    getnetcard() {
+        # 获取系统中可用的网卡名称
+        interfaces=$(ifconfig -a | sed -nE 's/^([^[:space:]]+).*$/\1/p')
+
+        # 输出供用户选择的网卡名称列表
+        PS3="请选择网卡名称： "
+        select interface in $interfaces; do
+            if [[ -n "$interface" ]]; then
+                break
+            fi
+        done
+        # 去掉网卡名称后面的冒号，并输出用户选择的网卡名称
+        interface=$(echo "$interface" | sed 's/://')
+        echo $interface
+    }
 
     #ufw防火墙
     ufwfun() {
@@ -1152,10 +1160,17 @@ ordertools() {
     options=("统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy)
     menu "${options[@]}"
 }
-#全局变量初始化
+#入口函数
+main() {
+
+    menuname='主页'
+    options=("software软件管理" software "network网络管理" networktools "system系统管理" sysset "ordertools其他工具" ordertools "updateself脚本升级" updateself "removeself脚本卸载" removeself)
+    menu "${options[@]}"
+}
+
+#变量初始化并清屏
 glovar
-#清屏
-clear
+
 #检查脚本是否已安装(/bin/init.sh存在?)
 which init.sh >/dev/null 2>&1
 if [ $? == 1 ]; then
@@ -1163,10 +1178,4 @@ if [ $? == 1 ]; then
     selfinstall
 fi
 #主页
-main() {
-
-    menuname='主页'
-    options=("software软件管理" software "network网络管理" networktools "system系统管理" sysset "ordertools其他工具" ordertools "updateself脚本升级" updateself "removeself脚本卸载" removeself)
-    menu "${options[@]}"
-}
 main
