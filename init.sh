@@ -140,6 +140,7 @@ updateself() {
 }
 #菜单头部
 menutop() {
+    clear
     _green '# Ubuntu初始化&工具脚本'
     _green '# Author:SSHPC <https://github.com/sshpc>'
     echo
