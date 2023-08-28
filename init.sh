@@ -1165,7 +1165,7 @@ ordertools() {
 main() {
 
     menuname='主页'
-    options=("software软件管理" software "network网络管理" networktools "system系统管理" sysset "ordertools其他工具" ordertools "updateself脚本升级" updateself "removeself脚本卸载" removeself)
+    options=("soft软件管理" software "network网络管理" networktools "system系统管理" sysset "docker" dockerfun "其他工具" ordertools "升级脚本" updateself "卸载脚本" removeself)
     menu "${options[@]}"
 }
 
