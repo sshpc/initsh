@@ -84,11 +84,11 @@ selfinstall() {
     _yellow '检查系统环境'
     echo
     if which s >/dev/null; then
-        
+
         _red '检测到已存在s程序，位置：/bin/s 请检查!'
         exit
     else
-        
+
         menuname='主页'
         if [ -e "$(pwd)/init.sh" ]; then
             jumpfun '开始安装脚本 ' 0.04
@@ -1035,8 +1035,108 @@ sysset() {
         vim /etc/rc.local
     }
 
+    # 配置自定义服务
+    customservicefun() {
+
+        serviceadd() {
+
+            _yellow "service ?? stop/start"
+            read -ep "请输入服务名称: " servicename
+
+            read -ep "请输入脚本路径: " shpwd
+
+            execcmd="nohup bash $shpwd  >> /root/$servicename.log 2>&1 &"
+
+            jumpfun '开始配置 ----------------------------' 0.02
+            echo
+
+            sysvinitfun() {
+
+                touch /etc/init.d/$servicename
+                echo "#!/bin/sh" >>/etc/init.d/$servicename
+                echo " " >>/etc/init.d/$servicename
+                echo "### BEGIN INIT INFO" >>/etc/init.d/$servicename
+                echo "# Provides: $servicename" >>/etc/init.d/$servicename
+                echo '# Required-Start: $network $remote_fs $local_fs' >>/etc/init.d/$servicename
+                echo '# Required-Stop: $network $remote_fs $local_fs' >>/etc/init.d/$servicename
+                echo "# Default-Start: 2 3 4 5" >>/etc/init.d/$servicename
+                echo "# Default-Stop: 0 1 6" >>/etc/init.d/$servicename
+                echo "# Short-Description: $servicename" >>/etc/init.d/$servicename
+                echo "# Description: $servicename" >>/etc/init.d/$servicename
+                echo "### END INIT INFO" >>/etc/init.d/$servicename
+                echo " " >>/etc/init.d/$servicename
+                echo "$execcmd" >>/etc/init.d/$servicename
+                echo " " >>/etc/init.d/$servicename
+                echo "exit 0" >>/etc/init.d/$servicename
+                chmod +x /etc/init.d/$servicename
+
+                update-rc.d $servicename defaults
+
+                echo
+                _green "文件位置 /etc/init.d/$servicename "
+
+                echo
+            }
+            systemdfun() {
+
+                touch /etc/systemd/system/$servicename.service
+                echo "[Unit]" >>/etc/systemd/system/$servicename.service
+                echo "Description=$servicename Service" >>/etc/systemd/system/$servicename.service
+                echo "After=network.target" >>/etc/systemd/system/$servicename.service
+                echo " " >>/etc/systemd/system/$servicename.service
+                echo "[Service]" >>/etc/systemd/system/$servicename.service
+                echo "ExecStart=$shpwd" >>/etc/systemd/system/$servicename.service
+                echo " " >>/etc/systemd/system/$servicename.service
+                echo "[Install]" >>/etc/systemd/system/$servicename.service
+                echo "WantedBy=default.target" >>/etc/systemd/system/$servicename.service
+
+                echo
+                _green "文件位置 /etc/systemd/system/$servicename.service"
+
+                echo
+            }
+            menuname='主页/系统/自定义服务/添加服务'
+            options=("sysvinit方式" sysvinitfun "systemd方式" systemdfun)
+
+            menu "${options[@]}"
+
+            systemctl enable $servicename
+
+            service $servicename start
+            echo
+            _blue "操作完成"
+
+            service $servicename status
+
+            _green "操作命令为 $execcmd"
+
+            _blue "现在可以使用service $servicename  start/stop/status"
+
+        }
+
+        servicedel() {
+
+            read -ep "请输入服务名称: " servicename
+            service $servicename stop
+            systemctl disable $servicename
+            update-rc.d -f $servicename remove
+
+            rm -rf /etc/init.d/$servicename
+            rm -rf /etc/systemd/system/$servicename.service
+            _blue "操作完成"
+            echo " "
+
+        }
+
+        menuname='主页/系统/自定义服务'
+        options=("添加服务" serviceadd "删除服务" servicedel)
+
+        menu "${options[@]}"
+
+    }
+
     menuname='主页/系统'
-    options=("sysinfo系统信息" sysinfo "磁盘信息" diskinfo "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "换阿里源" huanyuanfun "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "系统检查" systemcheck "cpu压测" cputest "磁盘测速" iotestspeed)
+    options=("sysinfo系统信息" sysinfo "磁盘信息" diskinfo "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "换阿里源" huanyuanfun "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "cpu压测" cputest "磁盘测速" iotestspeed)
 
     menu "${options[@]}"
 
