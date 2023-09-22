@@ -2,7 +2,7 @@
 export LANG=en_US.UTF-8
 #全局变量
 glovar() {
-    version='23.08'
+    version='23.09'
     datevar=$(date +%y%m%d%H%M%S)
     #菜单名称(默认主页)
     menuname='主页'
@@ -863,9 +863,6 @@ sysset() {
         echo "系统中空口令账户:"
         awk -F: '($2=="!!") {print $1"该账户为空口令账户,请管理员确认是否为新增账户,如果为新建账户,请配置密码-------warning"}' /etc/shadow
         echo
-        echo "正常情况下登录到本机30天内的所有用户的历史记录:"
-        last | head -n 30
-        next
         echo "查看syslog日志审计服务是否开启:"
         if service rsyslog status | egrep " active \(running"; then
             echo ">>>经分析,syslog服务已开启"
@@ -883,9 +880,7 @@ sysset() {
         echo "审计的要素和审计日志:"
         more /etc/rsyslog.conf | grep -v "^[$|#]" | grep -v "^$"
         next
-        echo "系统中关键文件修改时间:"
-        ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
-        next
+        
         echo "检查重要日志文件是否存在:"
         log_secure=/var/log/secure
         log_messages=/var/log/messages
