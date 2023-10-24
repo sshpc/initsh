@@ -1,11 +1,11 @@
 #!/bin/bash
 export LANG=en_US.UTF-8
-#全局变量
-glovar() {
-    version='23.09'
+#初始化函数
+initself() {
+    version='23.10'
     datevar=$(date +%y%m%d%H%M%S)
-    #菜单名称(默认主页)
-    menuname='主页'
+    #菜单名称(默认首页)
+    menuname='首页'
     #父级函数名
     parentfun=''
     ipaddresses=''
@@ -15,187 +15,192 @@ glovar() {
     unport=''
     ips=''
 
-    clear
-}
-#字体颜色定义
-_red() {
-    printf '\033[0;31;31m%b\033[0m' "$1"
-    echo
-}
-_green() {
-    printf '\033[0;31;32m%b\033[0m' "$1"
-    echo
-}
-_yellow() {
-    printf '\033[0;31;33m%b\033[0m' "$1"
-    echo
-}
-_blue() {
-    printf '\033[0;31;36m%b\033[0m' "$1"
-    echo
-}
-#分割线
-next() {
-    printf "%-50s\n" "-" | sed 's/\s/-/g'
-}
-#字符跳动 (参数：字符串 间隔时间s，默认为0.1秒)
-jumpfun() {
-    my_string=$1
-    delay=${2:-0.1}
-    # 循环输出每个字符
-    for ((i = 0; i < ${#my_string}; i++)); do
-        printf '\033[0;31;36m%b\033[0m' "${my_string:$i:1}"
-        sleep "$delay"
-    done
-    echo
-}
-
-#按任意键继续
-waitinput() {
-    echo
-    read -n1 -r -p "按任意键继续...(退出 Ctrl+C)"
-}
-#继续执行函数
-nextrun() {
-    #unset number
-    waitinput
-    #${parentfun}
-    main
-
-}
-#安装脚本
-selfinstall() {
-    menutop
-    secho() {
-        echo
-        _green '   ________       '
-        _green '  |\   ____\      '
-        _green '  \ \  \___|_     '
-        _green '   \ \_____  \    '
-        _green '    \|____|\  \   '
-        _green '      ____\_\  \  '
-        _green '     |\_________\ '
-        _green '     \|_________| '
+    #字体颜色定义
+    _red() {
+        printf '\033[0;31;31m%b\033[0m' "$1"
         echo
     }
-    secho
-    jumpfun "welcome" 0.06
-    echo
-    _yellow '检查系统环境'
-    echo
-    if which s >/dev/null; then
-
-        _red '检测到已存在s程序，位置：/bin/s 请检查!'
-        exit
-    else
-
-        menuname='主页'
-        if [ -e "$(pwd)/init.sh" ]; then
-            jumpfun '开始安装脚本 ' 0.04
-            echo
-            jumpfun '初始化 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' 0.02
-
-            cp -f "$(pwd)/init.sh" /bin/init.sh
-            ln -s /bin/init.sh /bin/s
-            clear
-            secho
-            echo
-            echo '文件位置： /bin/init.sh  /bin/s'
-            echo
-            _green '成功安装'
-            echo
-            _blue "提示：再次执行任意位置 's' "
-
-            echo
-            waitinput
-            clear
-        else
-            _yellow "没有此脚本文件，跳过安装，仅运行"
-            waitinput
-            clear
-        fi
-    fi
-}
-#卸载脚本
-removeself() {
-    _blue '开始卸载脚本'
-    rm -rf /bin/init.sh
-    rm -rf /bin/s
-    _blue '卸载完成'
-}
-#脚本升级
-updateself() {
-
-    _blue '下载github最新版'
-    wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh
-    # 检查上一条命令的退出状态码
-    if [ $? -eq 0 ]; then
-        removeself
-        chmod +x ./init.sh && ./init.sh
-
-    else
-        _red "下载失败,请重试"
-    fi
-
-}
-#菜单头部
-menutop() {
-    clear
-    _green '# Ubuntu初始化&工具脚本'
-    _green '# Author:SSHPC <https://github.com/sshpc>'
-    echo
-    _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v$version"
-    echo
-    _yellow "当前菜单: $menuname "
-    echo
-}
-#菜单渲染
-menu() {
-    menutop
-    options=("$@")
-    num_options=${#options[@]}
-    # 计算数组中的字符最大长度
-    max_len=0
-    for ((i = 0; i < num_options; i++)); do
-        # 获取当前字符串的长度
-        str_len=${#options[i]}
-
-        # 更新最大长度
-        if ((str_len > max_len)); then
-            max_len=$str_len
-        fi
-    done
-    # 渲染菜单
-    for ((i = 0; i < num_options; i += 4)); do
-        printf "%s%*s  " "$((i / 2 + 1)): ${options[i]}" $((max_len - ${#options[i]})) ""
-        if [[ "${options[i + 2]}" != "" ]]; then printf "$((i / 2 + 2)): ${options[i + 2]}"; fi
+    _green() {
+        printf '\033[0;31;32m%b\033[0m' "$1"
         echo
+    }
+    _yellow() {
+        printf '\033[0;31;33m%b\033[0m' "$1"
         echo
-    done
-    echo
-    printf '\033[0;31;36m%b\033[0m' "q: 退出  "
-    if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "  0: 返回主页"; fi
-    echo
-    echo
-    # 获取用户输入
-    read -ep "请输入命令号: " number
-    if [[ $number -ge 1 && $number -le $((num_options / 2)) ]]; then
-        #找到函数名索引
-        action_index=$((2 * (number - 1) + 1))
-        #函数名赋值
-        parentfun=${options[action_index]}
-        #函数执行
-        ${options[action_index]}
-    elif [[ $number == 0 ]]; then
+    }
+    _blue() {
+        printf '\033[0;31;36m%b\033[0m' "$1"
+        echo
+    }
+    #分割线
+    next() {
+        printf "%-50s\n" "-" | sed 's/\s/-/g'
+    }
+
+    #按任意键继续
+    waitinput() {
+        echo
+        read -n1 -r -p "按任意键继续...(退出 Ctrl+C)"
+    }
+    #继续执行函数
+    nextrun() {
+        #unset number
+        waitinput
+        #${parentfun}
         main
-    elif [[ $number == 'q' ]]; then
-        echo
-        exit
-    else
-        _yellow '>~~~~~~~~~~~~~~~输入有误~~~~~~~~~~~~~~~~~<'
-    fi
 
+    }
+
+    #字符跳动 (参数：字符串 间隔时间s，默认为0.1秒)
+    jumpfun() {
+        my_string=$1
+        delay=${2:-0.1}
+        # 循环输出每个字符
+        for ((i = 0; i < ${#my_string}; i++)); do
+            printf '\033[0;31;36m%b\033[0m' "${my_string:$i:1}"
+            sleep "$delay"
+        done
+        echo
+    }
+
+    #安装脚本
+    selfinstall() {
+        menutop
+        secho() {
+            echo
+            _green '   ________       '
+            _green '  |\   ____\      '
+            _green '  \ \  \___|_     '
+            _green '   \ \_____  \    '
+            _green '    \|____|\  \   '
+            _green '      ____\_\  \  '
+            _green '     |\_________\ '
+            _green '     \|_________| '
+            echo
+        }
+        jumpfun "welcome" 0.06
+        echo
+        _yellow '检查系统环境'
+        echo
+        if which s >/dev/null; then
+
+            _red '检测到已存在s程序，位置：/bin/s 请检查!'
+            exit
+        else
+
+            menuname='首页'
+            if [ -e "$(pwd)/init.sh" ]; then
+                jumpfun '开始安装脚本 ' 0.04
+                echo
+                jumpfun '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' 0.02
+
+                cp -f "$(pwd)/init.sh" /bin/init.sh
+                ln -s /bin/init.sh /bin/s
+                
+                secho
+                echo
+                echo '文件释放位置： /bin/init.sh  /bin/s'
+               
+                echo
+                echo "提示：再次执行任意位置键入 's' "
+                 echo
+                _blue '成功安装'
+
+                echo
+                waitinput
+                clear
+            else
+                _yellow "没有此脚本文件，跳过安装，仅运行"
+                waitinput
+                clear
+            fi
+        fi
+    }
+    #卸载脚本
+    removeself() {
+        rm -rf /bin/init.sh
+        rm -rf /bin/s
+        echo '删除/bin/init.sh  /bin/s'
+        echo
+        _blue '卸载完成'
+    }
+    #脚本升级
+    updateself() {
+
+        _blue '下载github最新版'
+        wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh
+        # 检查上一条命令的退出状态码
+        if [ $? -eq 0 ]; then
+            removeself
+            chmod +x ./init.sh && ./init.sh
+
+        else
+            _red "下载失败,请重试"
+        fi
+
+    }
+    #菜单头部
+    menutop() {
+        clear
+        _green '# Ubuntu初始化&工具脚本'
+        _green '# Author:SSHPC <https://github.com/sshpc>'
+        echo
+        _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v$version"
+        echo
+        _yellow "当前菜单: $menuname "
+        echo
+    }
+    #菜单渲染
+    menu() {
+        menutop
+        options=("$@")
+        num_options=${#options[@]}
+        # 计算数组中的字符最大长度
+        max_len=0
+        for ((i = 0; i < num_options; i++)); do
+            # 获取当前字符串的长度
+            str_len=${#options[i]}
+
+            # 更新最大长度
+            if ((str_len > max_len)); then
+                max_len=$str_len
+            fi
+        done
+        # 渲染菜单
+        for ((i = 0; i < num_options; i += 4)); do
+            printf "%s%*s  " "$((i / 2 + 1)): ${options[i]}" $((max_len - ${#options[i]})) ""
+            if [[ "${options[i + 2]}" != "" ]]; then printf "$((i / 2 + 2)): ${options[i + 2]}"; fi
+            echo
+            echo
+        done
+        echo
+        printf '\033[0;31;36m%b\033[0m' "q: 退出  "
+        if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "  0: 返回首页"; fi
+        echo
+        echo
+        # 获取用户输入
+        read -ep "请输入命令号: " number
+        if [[ $number -ge 1 && $number -le $((num_options / 2)) ]]; then
+            #找到函数名索引
+            action_index=$((2 * (number - 1) + 1))
+            #函数名赋值
+            parentfun=${options[action_index]}
+            #函数执行
+            ${options[action_index]}
+        elif [[ $number == 0 ]]; then
+            main
+        elif [[ $number == 'q' ]]; then
+            echo
+            exit
+        else
+            _yellow '>~~~~~~~~~~~~~~~输入有误~~~~~~~~~~~~~~~~~<'
+        fi
+
+    }
+
+    clear
 }
+
 #软件
 software() {
 
@@ -338,7 +343,7 @@ software() {
             echo
             _blue "卸载完成"
         }
-        menuname='主页/软件/卸载'
+        menuname='首页/软件/卸载'
         options=("手动输入" masterremove "卸载nginx" removenginx "卸载Apache" removeapache "卸载php" removephp "卸载docker" removedocker "卸载v2ray" removev2 "卸载mysql" removemysql)
         menu "${options[@]}"
     }
@@ -350,7 +355,7 @@ software() {
         btop
     }
 
-    menuname='主页/软件'
+    menuname='首页/软件'
     options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
     menu "${options[@]}"
 }
@@ -418,7 +423,7 @@ networktools() {
             ufwstatus
         }
 
-        menuname='主页/网络/ufw'
+        menuname='首页/网络/ufw'
         options=("开启ufw" ufwinstall "关闭ufw" ufwdisablefun "ufw状态" ufwstatus "添加端口" ufwadd "关闭端口" ufwclose)
         menu "${options[@]}"
 
@@ -457,7 +462,7 @@ networktools() {
             fail2ban-client status sshd
         }
 
-        menuname='主页/网络/fail2ban'
+        menuname='首页/网络/fail2ban'
         options=("安装配置" installfail2ban "查看状态" fail2banstatusfun)
         menu "${options[@]}"
 
@@ -645,7 +650,7 @@ EOM
         bash <(curl -Lso- https://down.wangchao.info/sh/superspeed.sh)
     }
 
-    menuname='主页/网络'
+    menuname='首页/网络'
     options=("网络信息" netinfo "IP连接数" ipcount "ssh爆破记录" sshbaopo "实时网速" vnstatfun "测速1" netfast "测速2" netfast2 "三网测速" sanwang "iperf3" iperftest "配置本机ip" staticip "启用dhcp" dhcpip "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
 
     menu "${options[@]}"
@@ -730,6 +735,7 @@ sysset() {
         systemctl restart rsyslog.service cron.service
         echo "当前系统时间: $(date -R)"
     }
+    #配置仅秘钥rootssh登录
     sshpubonly() {
         echo "备份原文件Back up the sshd_config"
         cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak."$datevar"
@@ -751,7 +757,7 @@ sysset() {
         echo "公钥："
         cat ~/.ssh/id_ed25519.pub
     }
-    #写入其他ssh公钥
+    #往authorized_keys写入公钥
     sshsetpub() {
         echo "请填入ssh公钥 (Write into /root/.ssh/authorized_keys)"
         read -ep "请粘贴至命令行回车(Please paste and enter): " sshpub
@@ -880,7 +886,7 @@ sysset() {
         echo "审计的要素和审计日志:"
         more /etc/rsyslog.conf | grep -v "^[$|#]" | grep -v "^$"
         next
-        
+
         echo "检查重要日志文件是否存在:"
         log_secure=/var/log/secure
         log_messages=/var/log/messages
@@ -1090,7 +1096,7 @@ sysset() {
 
                 echo
             }
-            menuname='主页/系统/自定义服务/添加服务'
+            menuname='首页/系统/自定义服务/添加服务'
             options=("sysvinit方式" sysvinitfun "systemd方式" systemdfun)
 
             menu "${options[@]}"
@@ -1123,14 +1129,14 @@ sysset() {
 
         }
 
-        menuname='主页/系统/自定义服务'
+        menuname='首页/系统/自定义服务'
         options=("添加服务" serviceadd "删除服务" servicedel)
 
         menu "${options[@]}"
 
     }
 
-    menuname='主页/系统'
+    menuname='首页/系统'
     options=("sysinfo系统信息" sysinfo "磁盘信息" diskinfo "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "换阿里源" huanyuanfun "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "cpu压测" cputest "磁盘测速" iotestspeed)
 
     menu "${options[@]}"
@@ -1208,7 +1214,7 @@ dockerfun() {
         echo "所有容器 "
         docker ps -a
     }
-    menuname='主页/docker'
+    menuname='首页/docker'
     options=("查看docker镜像" dockerimagesfun "查看容器" dockerpsfun "后台运行一个容器" dockerrund "运行一个终端交互容器" dockerrunit "进入交互式容器" dockerexec "开启一个容器" opencon "停止一个容器" stopcon "删除一个容器" rmcon)
 
     menu "${options[@]}"
@@ -1252,26 +1258,26 @@ ordertools() {
             echo
         fi
     }
-    menuname='主页/其他工具'
+    menuname='首页/其他工具'
     options=("统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy)
     menu "${options[@]}"
 }
 #入口函数
 main() {
 
-    menuname='主页'
+    menuname='首页'
     options=("soft软件管理" software "network网络管理" networktools "system系统管理" sysset "docker" dockerfun "其他工具" ordertools "升级脚本" updateself "卸载脚本" removeself)
     menu "${options[@]}"
 }
 
-#变量初始化并清屏
-glovar
+#初始化
+initself
 
 #检查脚本是否已安装(/bin/init.sh存在?)
 which init.sh >/dev/null 2>&1
 if [ $? == 1 ]; then
-    menuname='开箱页面'
+    menuname='脚本安装'
     selfinstall
 fi
-#主页
+#首页
 main

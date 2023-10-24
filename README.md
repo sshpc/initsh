@@ -11,7 +11,7 @@
 
 * 一键换阿里源
 * 配置物理机静态ip，dhcp
-* 软件暴力卸载
+* 软件卸载
 * 系统、网络、磁盘、硬件信息查看
 * cpu压力测试，磁盘测速，外网测网速
 * 同步系统时间
@@ -22,6 +22,7 @@
 * 统计目录文件行数
 * git一键提交
 * nmap扫描、iperf测速
+* 自定义脚本服务
 * 持续更新...
 
 ## 三、安装使用
@@ -52,13 +53,15 @@ wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x 
 ```sh
 >~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:vx.x.x
 
-当前菜单: 主页 
+当前菜单: 首页 
 
-1: software软件管理    2: network网络管理
+1: soft软件管理      2: network网络管理
 
-3: system系统管理      4: ordertools其他工具
+3: system系统管理    4: docker
 
-5: updateself脚本升级  6: removeself脚本卸载
+5: 其他工具          6: 升级脚本
+
+7: 卸载脚本
 
 q: 退出  
 
