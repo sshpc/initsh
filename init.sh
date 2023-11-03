@@ -2,7 +2,7 @@
 export LANG=en_US.UTF-8
 #初始化函数
 initself() {
-    version='23.10'
+    version='23.11'
     datevar=$(date +%y%m%d%H%M%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -96,15 +96,17 @@ initself() {
 
                 cp -f "$(pwd)/init.sh" /bin/init.sh
                 ln -s /bin/init.sh /bin/s
-                
+                mkdir /etc/s
+
                 secho
                 echo
-                echo '文件释放位置： /bin/init.sh  /bin/s'
-               
+                echo '文件释放位置： /bin/init.sh  /bin/s /etc/s'
+
                 echo
                 echo "提示：再次执行任意位置键入 's' "
-                 echo
+                echo
                 _blue '成功安装'
+                echo 's脚本安装 ' $datevar >>/etc/s/s.log
 
                 echo
                 waitinput
@@ -121,6 +123,11 @@ initself() {
         rm -rf /bin/init.sh
         rm -rf /bin/s
         echo '删除/bin/init.sh  /bin/s'
+        echo 's脚本卸载 ' $datevar >>/etc/s/s.log
+        read -ep "是否删除/etc/s 日志目录 y or n (回车默认n): " yorn
+        if [[ "$yorn" = "y" ]]; then
+            rm -rf /etc/s
+        fi
         echo
         _blue '卸载完成'
     }
@@ -131,6 +138,7 @@ initself() {
         wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh
         # 检查上一条命令的退出状态码
         if [ $? -eq 0 ]; then
+            _blue '卸载旧版...'
             removeself
             chmod +x ./init.sh && ./init.sh
 
@@ -659,6 +667,7 @@ EOM
 #系统
 sysset() {
 
+    #换源
     huanyuanfun() {
         a1804() {
             echo "deb http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse" >>/etc/apt/sources.list
@@ -692,35 +701,13 @@ sysset() {
             echo "deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse" >>/etc/apt/sources.list
             echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse" >>/etc/apt/sources.list
         }
-        menutop
-        echo "检测你的系统版本为:"
-        lsb_release -a
-        echo "选择你的Ubuntu版本"
-        echo "1:Ubuntu 18.04(bionic)    2:Ubuntu 20.04(focal)  3:Ubuntu 22.04(jammy)"
-        read -ep "请输入命令数字: " sourcesnumber
-        echo "开始备份原列表"
+        menuname='首页/系统/换源'
+        options=("18.04(bionic)" a1804 "20.04(focal)" a2004 "22.04(jammy)" a2204)
+        menu "${options[@]}"
         cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
-        echo "原source list已全量备份至 /etc/apt/sources.list.bak.$datevar"
+        echo 'ok'
+        echo "原source list已备份至 /etc/apt/sources.list.bak.$datevar"
         rm /etc/apt/sources.list
-        echo "开始写入阿里源$sourcesnumber"
-        case $sourcesnumber in
-        1)
-            a1804
-            echo "source list已经写入阿里云源."
-            ;;
-        2)
-            a2004
-            echo "source list已经写入阿里云源."
-            ;;
-        3)
-            a2204
-            echo "source list已经写入阿里云源."
-            ;;
-        *)
-            _yellow '>~~~~~~~~~~~~~~~输入有误~~~~~~~~~~~~~~~~~<'
-            exit
-            ;;
-        esac
     }
     #同步时间
     synchronization_time() {
@@ -979,6 +966,7 @@ sysset() {
             echo ">>>远程访问策略未设置--------ok"
         fi
     }
+    #cpu压测
     cputest() {
         echo "检查安装stress"
         apt install stress -y
@@ -1042,9 +1030,11 @@ sysset() {
         serviceadd() {
 
             _yellow "service ?? stop/start"
+            _red "服务名称需与脚本名称一致"
+
             read -ep "请输入服务名称: " servicename
 
-            read -ep "请输入脚本路径: " shpwd
+            read -ep "请输入脚本绝对路径: " shpwd
 
             execcmd="nohup bash $shpwd  >> /root/$servicename.log 2>&1 &"
 
@@ -1066,7 +1056,23 @@ sysset() {
                 echo "# Description: $servicename" >>/etc/init.d/$servicename
                 echo "### END INIT INFO" >>/etc/init.d/$servicename
                 echo " " >>/etc/init.d/$servicename
+                echo "start() {" >>/etc/init.d/$servicename
                 echo "$execcmd" >>/etc/init.d/$servicename
+                echo "}" >>/etc/init.d/$servicename
+                echo "stop() {" >>/etc/init.d/$servicename
+                echo " pkill -f $servicename" >>/etc/init.d/$servicename
+                echo "}" >>/etc/init.d/$servicename
+                echo 'case "$1" in' >>/etc/init.d/$servicename
+                echo "  start)" >>/etc/init.d/$servicename
+                echo " start" >>/etc/init.d/$servicename
+                echo " ;;" >>/etc/init.d/$servicename
+                echo "  stop)" >>/etc/init.d/$servicename
+                echo "  stop" >>/etc/init.d/$servicename
+                echo " ;;" >>/etc/init.d/$servicename
+                echo " *)" >>/etc/init.d/$servicename
+                echo " exit 1" >>/etc/init.d/$servicename
+                echo " ;;" >>/etc/init.d/$servicename
+                echo "esac" >>/etc/init.d/$servicename
                 echo " " >>/etc/init.d/$servicename
                 echo "exit 0" >>/etc/init.d/$servicename
                 chmod +x /etc/init.d/$servicename
@@ -1097,7 +1103,7 @@ sysset() {
                 echo
             }
             menuname='首页/系统/自定义服务/添加服务'
-            options=("sysvinit方式" sysvinitfun "systemd方式" systemdfun)
+            options=("sysvinit方式(首选)" sysvinitfun "systemd方式" systemdfun)
 
             menu "${options[@]}"
 
@@ -1106,6 +1112,7 @@ sysset() {
             service $servicename start
             echo
             _blue "操作完成"
+            echo add $servicename $datevar >>/etc/s/service.log
 
             service $servicename status
 
@@ -1117,13 +1124,17 @@ sysset() {
 
         servicedel() {
 
-            read -ep "请输入服务名称: " servicename
+            more /etc/s/service.log
+            echo
+            read -ep "请输入删除的服务名称: " servicename
             service $servicename stop
             systemctl disable $servicename
             update-rc.d -f $servicename remove
 
             rm -rf /etc/init.d/$servicename
             rm -rf /etc/systemd/system/$servicename.service
+
+            echo del $servicename $datevar >>/etc/s/service.log
             _blue "操作完成"
             echo " "
 
@@ -1262,7 +1273,7 @@ ordertools() {
     options=("统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy)
     menu "${options[@]}"
 }
-#入口函数
+#主函数
 main() {
 
     menuname='首页'
