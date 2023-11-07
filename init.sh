@@ -2,7 +2,7 @@
 export LANG=en_US.UTF-8
 #初始化函数
 initself() {
-    version='23.11'
+    selfversion='23.11'
     datevar=$(date +%y%m%d%H%M%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -44,11 +44,9 @@ initself() {
     }
     #继续执行函数
     nextrun() {
-        #unset number
         waitinput
-        #${parentfun}
-        main
-
+        #环境变量调用上一次的次菜单
+        ${FUNCNAME[3]}
     }
 
     #字符跳动 (参数：字符串 间隔时间s，默认为0.1秒)
@@ -153,7 +151,7 @@ initself() {
         _green '# Ubuntu初始化&工具脚本'
         _green '# Author:SSHPC <https://github.com/sshpc>'
         echo
-        _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:v$version"
+        _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  v: $selfversion"
         echo
         _yellow "当前菜单: $menuname "
         echo
@@ -183,7 +181,7 @@ initself() {
         done
         echo
         printf '\033[0;31;36m%b\033[0m' "q: 退出  "
-        if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "  0: 返回首页"; fi
+        if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "b: 返回  0: 首页"; fi
         echo
         echo
         # 获取用户输入
@@ -197,6 +195,8 @@ initself() {
             ${options[action_index]}
         elif [[ $number == 0 ]]; then
             main
+        elif [[ $number == 'b' ]]; then
+            ${FUNCNAME[3]}
         elif [[ $number == 'q' ]]; then
             echo
             exit
@@ -204,6 +204,23 @@ initself() {
             _yellow '>~~~~~~~~~~~~~~~输入有误~~~~~~~~~~~~~~~~~<'
         fi
 
+    }
+
+    #获取网卡
+    getnetcard() {
+        # 获取系统中可用的网卡名称
+        interfaces=$(ifconfig -a | sed -nE 's/^([^[:space:]]+).*$/\1/p')
+
+        # 输出供用户选择的网卡名称列表
+        PS3="请选择网卡名称： "
+        select interface in $interfaces; do
+            if [[ -n "$interface" ]]; then
+                break
+            fi
+        done
+        # 去掉网卡名称后面的冒号，并输出用户选择的网卡名称
+        interface=$(echo "$interface" | sed 's/://')
+        echo $interface
     }
 
     clear
@@ -370,23 +387,6 @@ software() {
 #网络
 networktools() {
 
-    #获取网卡
-    getnetcard() {
-        # 获取系统中可用的网卡名称
-        interfaces=$(ifconfig -a | sed -nE 's/^([^[:space:]]+).*$/\1/p')
-
-        # 输出供用户选择的网卡名称列表
-        PS3="请选择网卡名称： "
-        select interface in $interfaces; do
-            if [[ -n "$interface" ]]; then
-                break
-            fi
-        done
-        # 去掉网卡名称后面的冒号，并输出用户选择的网卡名称
-        interface=$(echo "$interface" | sed 's/://')
-        echo $interface
-    }
-
     #ufw防火墙
     ufwfun() {
         ufwinstall() {
@@ -438,6 +438,10 @@ networktools() {
     }
 
     fail2banfun() {
+        fail2banstatusfun() {
+            fail2ban-client status sshd
+        }
+
         installfail2ban() {
             echo "检查并安装fail2ban"
             apt install fail2ban -y
@@ -464,96 +468,37 @@ networktools() {
             echo "服务已开启"
             echo
             echo "----服务状态----"
-            fail2ban-client status sshd
+            fail2banstatusfun
         }
-        fail2banstatusfun() {
-            fail2ban-client status sshd
-        }
+        
 
         menuname='首页/网络/fail2ban'
-        options=("安装配置" installfail2ban "查看状态" fail2banstatusfun)
+        options=("安装配置sshd" installfail2ban "查看状态" fail2banstatusfun)
         menu "${options[@]}"
 
     }
-
-    staticip() {
-        echo "开始备份原文件"
-        cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
-        #获取网卡名称
-        ens=$(getnetcard)
-
-        until [[ -n "$ipaddresses" ]]; do
-            read -ep "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
-        done
-        until [[ -n "$gateway" ]]; do
-            read -ep "请输入网关(x.x.x.x): " gateway
-        done
-        until [[ -n "$nameservers" ]]; do
-            read -ep "请输入DNS(x.x.x.x): " nameservers
-        done
-        _red "请仔细检查配置是否正确!"
-        echo "网卡为" $ens
-        echo "网络地址为:$ipaddresses"
-        echo "网关为:$gateway"
-        echo "DNS地址为:$nameservers "
-        waitinput
-
-        cat <<EOM >/etc/netplan/00-installer-config.yaml
-# This is the network config written by 'subiquity'
-network:
-  version: 2
-  ethernets:
-     $ens:
-         dhcp4: no
-         addresses: [$ipaddresses]
-         gateway4: $gateway
-         nameservers:
-             addresses: [$nameservers]
-EOM
-        echo "配置信息成功写入,成功切换ip 、若ssh断开,请使用设置的ip:$ipaddresses 重新登录"
-        netplan apply
-        echo "ok"
-    }
-    dhcpip() {
-        echo "开始配置DHCP"
-        #获取网卡名称
-        ens=$(getnetcard)
-        _red "请仔细检查配置是否正确!"
-        echo "网卡为" $ens
-        waitinput
-        cat <<EOM >/etc/netplan/00-installer-config.yaml
-# This is the network config written by 'subiquity'
-network:
-  ethernets:
-     $ens:
-      dhcp4: true
-  version: 2
-EOM
-        echo "配置信息成功写入"
-        netplan apply
-        echo "ok"
-    }
+    #网络信息
     netinfo() {
         echo
-        jumpfun "本机IP" 0.04
+        jumpfun "--本机IP--" 0.04
         ifconfig -a | grep "inet "
-        jumpfun "公网IP" 0.04
-        curl cip.cc
-        jumpfun "路由表" 0.04
+
+        jumpfun "--路由表--" 0.04
         route -n
-        jumpfun "监听端口" 0.04
+        jumpfun "--监听端口--" 0.04
         netstat -tunlp
+        jumpfun "--公网IP--" 0.04
+        curl cip.cc
+        echo
+        jumpfun "--IP连接数--" 0.04
+        echo '   数量 ip'
+        netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
+        echo
+        jumpfun "--ssh失败记录--" 0.04
+        lastb | grep root | awk '{print $3}' | sort | uniq
         echo
     }
-    netfast() {
-        echo
-        echo "检查安装测速工具"
-        apt install speedtest-cli -y
-        echo "开始测速"
-        speedtest-cli
-        echo "测速完成"
-        echo
-    }
+    #iperf3打流
     iperftest() {
 
         which iperf3 >/dev/null 2>&1
@@ -588,7 +533,7 @@ EOM
             ;;
         esac
     }
-
+    #nmap扫描
     nmapfun() {
 
         which nmap >/dev/null 2>&1
@@ -630,36 +575,112 @@ EOM
             ;;
         esac
     }
-
+    #实时网速
     vnstatfun() {
         apt-get install vnstat
         #获取网卡名称
         vnstat -l -i $(getnetcard)
     }
+    #外网测速
+    publicnettest() {
 
-    #各IP地址连接数
-    ipcount() {
-        echo
-        echo '   数量 ip'
-        netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
-        echo
+        netfast() {
+            apt install speedtest-cli -y
+            echo "开始测速"
+            speedtest-cli
+            echo "测速完成"
+        }
+
+        #SpeedCLI 测速
+        netfast2() {
+            echo "开始测速"
+            curl -fsSL git.io/speedtest-cli.sh | sudo bash
+            speedtest
+            echo "测速完成"
+        }
+        #三网测速
+        sanwang() {
+            bash <(curl -Lso- https://down.wangchao.info/sh/superspeed.sh)
+        }
+
+        menuname='首页/网络/外网测速'
+        options=("测速1" netfast "测速2-SpeedCLI" netfast2 "三网测速" sanwang)
+
+        menu "${options[@]}"
+
     }
-    #ssh爆破记录
-    sshbaopo() {
-        lastb | grep root | awk '{print $3}' | sort | uniq
-    }
-    #SpeedCLI 测速
-    netfast2() {
-        curl -fsSL git.io/speedtest-cli.sh | sudo bash
-        speedtest
-    }
-    #三网测速
-    sanwang() {
-        bash <(curl -Lso- https://down.wangchao.info/sh/superspeed.sh)
+    #配置局域网ip
+    lanfun() {
+
+        staticip() {
+            echo "备份原文件/etc/netplan/00-installer-config.yaml"
+            cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
+            #获取网卡名称
+            ens=$(getnetcard)
+
+            until [[ -n "$ipaddresses" ]]; do
+                read -ep "请输入ip地址+网络号 (x.x.x.x/x): " ipaddresses
+            done
+            until [[ -n "$gateway" ]]; do
+                read -ep "请输入网关(x.x.x.x): " gateway
+            done
+            until [[ -n "$nameservers" ]]; do
+                read -ep "请输入DNS(x.x.x.x): " nameservers
+            done
+            _red "请仔细检查配置是否正确!"
+            echo "网卡为" $ens
+            echo "网络地址为(x.x.x.x/x):$ipaddresses"
+            echo "网关为:$gateway"
+            echo "DNS地址为:$nameservers "
+            waitinput
+
+            cat <<EOM >/etc/netplan/00-installer-config.yaml
+# This is the network config written by 'subiquity'
+network:
+  version: 2
+  ethernets:
+     $ens:
+         dhcp4: no
+         addresses: [$ipaddresses]
+         gateway4: $gateway
+         nameservers:
+             addresses: [$nameservers]
+EOM
+            echo "配置信息成功写入,成功切换ip 、若ssh断开,请使用设置的ip:$ipaddresses 重新登录"
+            netplan apply
+            echo "ok"
+        }
+        dhcpip() {
+            echo "开始配置DHCP"
+            echo "备份原文件/etc/netplan/00-installer-config.yaml"
+            cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak."$datevar"
+            #获取网卡名称
+            ens=$(getnetcard)
+            _red "请仔细检查配置是否正确!"
+            echo "网卡为" $ens
+            waitinput
+            cat <<EOM >/etc/netplan/00-installer-config.yaml
+# This is the network config written by 'subiquity'
+network:
+  ethernets:
+     $ens:
+      dhcp4: true
+  version: 2
+EOM
+            echo "配置信息成功写入"
+            netplan apply
+            echo "ok"
+        }
+
+        menuname='首页/网络/配置局域网ip'
+        options=("配置静态ip" staticip "配置dhcp" dhcpip)
+
+        menu "${options[@]}"
+
     }
 
     menuname='首页/网络'
-    options=("网络信息" netinfo "IP连接数" ipcount "ssh爆破记录" sshbaopo "实时网速" vnstatfun "测速1" netfast "测速2" netfast2 "三网测速" sanwang "iperf3" iperftest "配置本机ip" staticip "启用dhcp" dhcpip "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
+    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "实时网速" vnstatfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
 
     menu "${options[@]}"
 }
@@ -735,11 +756,11 @@ sysset() {
     }
     #生成ssh密钥对
     sshgetpub() {
-        echo "输完3次回车"
-        read -ep "请输入email: " email
+        _blue "默认使用 ed25519 加密算法"
+        read -ep "请输入email 仅做注释(可选): " email
         ssh-keygen -t ed25519 -C "$email"
         echo
-        echo "ssh秘钥钥生成成功"
+        echo "ssh秘钥生成成功"
         echo
         echo "公钥："
         cat ~/.ssh/id_ed25519.pub
@@ -770,46 +791,48 @@ sysset() {
         machinemodel=$(dmidecode | grep "Product Name" | sed 's/^[ \t]*//g' | tr '\n' '\t')
         date=$(date)
         tcpalgorithm=$(sysctl net.ipv4.tcp_congestion_control | awk -F ' ' '{print $3}')
-        echo "主机名:           $hostname"
-        echo "系统名称:         $system"
-        _blue "系统版本:         $version $codename"
-        echo "内核版本:         $kernel"
-        echo "系统类型:         $platform"
-        _green "CPU型号:         $cpumodel"
-        echo "CPU核数:          $cpu"
-        echo "CPU缓存:          $ccache"
+        jumpfun "--主机--" 0.04
+        echo "主机名:        $hostname" 0.02
+        echo "系统名称:      $system"
+        _blue "系统版本:      $version $codename"
+        echo "内核版本:      $kernel"
+        echo "系统类型:      $platform"
+        _green "CPU型号:      $cpumodel"
+        echo "CPU核数:       $cpu"
+        echo "CPU缓存:       $ccache"
         if [ -n "$cpu_aes" ]; then
-            _blue "AES指令集:        yes"
+            _blue "AES指令集:     yes"
         fi
-        echo "机器型号:         $machinemodel"
-        echo "系统时间:         $date"
-        echo "本机IP地址:       $address"
-        _blue "拥塞控制:         $tcpalgorithm"
+        echo "机器型号:      $machinemodel"
+        echo "系统时间:      $date"
+        echo "本机IP地址:    $address"
+        _blue "拥塞控制:      $tcpalgorithm"
         echo
+        jumpfun "--磁盘--" 0.04
+        df -h
+        nextrun
     }
+    #磁盘详细信息
     diskinfo() {
-        echo "\n分区信息:"
-        df -Th
-        lsblk
-        echo -e "\n 磁盘信息:"
-        fdisk -l
-        echo -e "\n PV物理卷查看:"
+        jumpfun "--PV物理卷查看--" 0.04
         pvscan
-        echo -e "\n vgs虚拟卷查看:"
+        jumpfun "--vgs虚拟卷查看--" 0.04
         vgs
-        echo -e "\n lvscan逻辑卷扫描:"
+        jumpfun "--lvscan逻辑卷扫描--" 0.04
         lvscan
-        echo -e "\n 分区扩展"
-        echo "Ubuntu \n lvextend -L +74G /dev/ubuntu-vg/ubuntu-lv"
-        echo "lsblk"
-        echo -e "ubuntu general \n # resize2fs -p -F /dev/mapper/ubuntu--vg-ubuntu--lv"
-        echo "文件系统信息:"
+        jumpfun "--文件系统信息--" 0.04
         more /etc/fstab | grep -v "^#" | grep -v "^$"
         echo
+        jumpfun "--分区信息--" 0.04
+        df -Th
+        lsblk
+        jumpfun "--fdisk信息--" 0.04
+        fdisk -l
+        nextrun
     }
+    #系统检查
     systemcheck() {
-        echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>安全审计<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        echo "正常情况下登录到本机30天内的所有用户的历史记录:"
+        echo "正常登录到本机30天内的所有用户的历史记录:"
         last | head -n 30
         echo "系统中关键文件修改时间:"
         ls -ltr /bin/ls /bin/login /etc/passwd /bin/ps /etc/shadow | awk '{print ">>>文件名："$9"  ""最后修改时间："$6" "$7" "$8}'
@@ -965,50 +988,80 @@ sysset() {
         else
             echo ">>>远程访问策略未设置--------ok"
         fi
+        nextrun
     }
-    #cpu压测
-    cputest() {
-        echo "检查安装stress"
-        apt install stress -y
-        echo "默认单核60s测速 手动测试命令: stress -c 2 -t 100  #2代表核数 测试时间100s"
-        waitinput
-        stress -c 1 -t 60
-    }
-    #磁盘测速
-    iotestspeed() {
-        #io测试
-        io_test() {
-            (LANG=C dd if=/dev/zero of=benchtest_$$ bs=512k count=$1 conv=fdatasync && rm -f benchtest_$$) 2>&1 | awk -F, '{io=$NF} END { print io}' | sed 's/^[ \t]*//;s/[ \t]*$//'
-        }
-        _blue "正在进行磁盘测速..."
-        echo
-        freespace=$(df -m . | awk 'NR==2 {print $4}')
-        if [ -z "${freespace}" ]; then
-            freespace=$(df -m . | awk 'NR==3 {print $3}')
-        fi
-        if [ ${freespace} -gt 1024 ]; then
-            io1=$(io_test 2048)
-            echo " I/O Speed(1st run) : $(_yellow "$io1")"
-            io2=$(io_test 2048)
-            echo " I/O Speed(2nd run) : $(_yellow "$io2")"
-            io3=$(io_test 2048)
-            echo " I/O Speed(3rd run) : $(_yellow "$io3")"
-            ioraw1=$(echo $io1 | awk 'NR==1 {print $1}')
-            [ "$(echo $io1 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw1=$(awk 'BEGIN{print '$ioraw1' * 1024}')
-            ioraw2=$(echo $io2 | awk 'NR==1 {print $1}')
-            [ "$(echo $io2 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw2=$(awk 'BEGIN{print '$ioraw2' * 1024}')
-            ioraw3=$(echo $io3 | awk 'NR==1 {print $1}')
-            [ "$(echo $io3 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw3=$(awk 'BEGIN{print '$ioraw3' * 1024}')
-            ioall=$(awk 'BEGIN{print '$ioraw1' + '$ioraw2' + '$ioraw3'}')
-            ioavg=$(awk 'BEGIN{printf "%.1f", '$ioall' / 3}')
-            echo " I/O Speed(average) : $(_yellow "$ioavg MB/s")"
+    #ps进程搜索
+    pssearch() {
+        read -rp "ps -aux | grep ? <- :" -e name
+        if [[ "$name" = "" ]]; then
+            ps -aux
+
         else
-            echo " $(_red "Not enough space for I/O Speed test!")"
+            ps -aux | grep $name
+
         fi
+
+        nextrun
     }
+    #性能测试
+    performancetest() {
+        stresscputest() {
+            echo "检查安装stress"
+            apt install stress -y
+            echo "默认单核60s测速 手动测试命令: stress -c 2 -t 100  #2代表核数 测试时间100s"
+            waitinput
+            stress -c 1 -t 60
+        }
+        sysbenchcputest() {
+            echo "检查安装sysbench"
+            apt install sysbench -y
+            waitinput
+            sysbench cpu run
+        }
+        #磁盘测速
+        iotestspeed() {
+            #io测试
+            io_test() {
+                (LANG=C dd if=/dev/zero of=benchtest_$$ bs=512k count=$1 conv=fdatasync && rm -f benchtest_$$) 2>&1 | awk -F, '{io=$NF} END { print io}' | sed 's/^[ \t]*//;s/[ \t]*$//'
+            }
+            _blue "正在进行磁盘测速..."
+            echo
+            freespace=$(df -m . | awk 'NR==2 {print $4}')
+            if [ -z "${freespace}" ]; then
+                freespace=$(df -m . | awk 'NR==3 {print $3}')
+            fi
+            if [ ${freespace} -gt 1024 ]; then
+                io1=$(io_test 2048)
+                echo " I/O Speed(1st run) : $(_yellow "$io1")"
+                io2=$(io_test 2048)
+                echo " I/O Speed(2nd run) : $(_yellow "$io2")"
+                io3=$(io_test 2048)
+                echo " I/O Speed(3rd run) : $(_yellow "$io3")"
+                ioraw1=$(echo $io1 | awk 'NR==1 {print $1}')
+                [ "$(echo $io1 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw1=$(awk 'BEGIN{print '$ioraw1' * 1024}')
+                ioraw2=$(echo $io2 | awk 'NR==1 {print $1}')
+                [ "$(echo $io2 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw2=$(awk 'BEGIN{print '$ioraw2' * 1024}')
+                ioraw3=$(echo $io3 | awk 'NR==1 {print $1}')
+                [ "$(echo $io3 | awk 'NR==1 {print $2}')" == "GB/s" ] && ioraw3=$(awk 'BEGIN{print '$ioraw3' * 1024}')
+                ioall=$(awk 'BEGIN{print '$ioraw1' + '$ioraw2' + '$ioraw3'}')
+                ioavg=$(awk 'BEGIN{printf "%.1f", '$ioall' / 3}')
+                echo " I/O Speed(average) : $(_yellow "$ioavg MB/s")"
+            else
+                echo " $(_red "Not enough space for I/O Speed test!")"
+            fi
+        }
+        menuname='首页/系统/性能测试'
+        options=("sysbench-cpu测试" sysbenchcputest "stress-cpu压测" cputest "磁盘测速" iotestspeed)
+
+        menu "${options[@]}"
+
+    }
+
     #查看本机authorized_keys
     catkeys() {
+
         cat /root/.ssh/authorized_keys
+
         nextrun
     }
     #计划任务crontab
@@ -1148,7 +1201,7 @@ sysset() {
     }
 
     menuname='首页/系统'
-    options=("sysinfo系统信息" sysinfo "磁盘信息" diskinfo "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "换阿里源" huanyuanfun "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "cpu压测" cputest "磁盘测速" iotestspeed)
+    options=("sysinfo系统信息" sysinfo "磁盘详细信息" diskinfo "ps进程搜索" pssearch "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "换阿里源" huanyuanfun "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "性能测试" performancetest)
 
     menu "${options[@]}"
 
@@ -1269,8 +1322,55 @@ ordertools() {
             echo
         fi
     }
+    siegetest() {
+        apt install siege -y
+        read -rp "输入被测试的url:" -e url
+        read -rp "输入并发数1-255: " -e -i 10 erupt
+        read -rp "输入测试时间: " -e -i 10 time
+        echo
+        _yellow '-c 并发数 -t 时间 -b 禁用请求之间的延迟(暴力模式)'
+        echo "siege -c $erupt -t $time $url"
+        echo
+        waitinput
+
+        jumpfun '开始测试...' 0.06
+        siege -c $erupt -t $time $url
+
+    }
+    pingalways() {
+        read -rp "目标主机:" -e target_host
+        read -rp "ping请求的参数: " -e -i -t -l 4096 ping_options
+        read -rp "并发数: " -e -i 10 concurrency
+
+        # 数组用于存储ping进程的进程ID
+        pids=()
+
+        # 定义终止信号的处理函数
+        function cleanup() {
+            echo "Terminating ping processes..."
+            for pid in "${pids[@]}"; do
+                kill $pid
+            done
+            exit
+        }
+
+        # 注册终止信号的处理函数
+        trap cleanup SIGINT SIGTERM
+
+        # 并发执行ping请求
+        for ((i = 1; i <= concurrency; i++)); do
+            ping $ping_options $target_host >/dev/null &
+            pids+=($!)
+        done
+
+        echo "Ping requests have been sent."
+
+        # 等待所有ping进程完成
+        wait
+
+    }
     menuname='首页/其他工具'
-    options=("统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy)
+    options=("统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways)
     menu "${options[@]}"
 }
 #主函数
@@ -1284,11 +1384,11 @@ main() {
 #初始化
 initself
 
-#检查脚本是否已安装(/bin/init.sh存在?)
+#检查脚本是否已安装
 which init.sh >/dev/null 2>&1
 if [ $? == 1 ]; then
     menuname='脚本安装'
     selfinstall
 fi
-#首页
+
 main
