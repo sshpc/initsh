@@ -681,12 +681,8 @@ EOM
 
     #配置临时代理
     http_proxy(){
-        _blue '配置后仅当前窗口生效'
-        until [[ -n "$url" ]]; do
-                read -ep "请输入地址,如:http://x.x.x.x:x" url
-            done
-        export http_proxy=$url
-        _green '已成功配置'
+        _blue '配置后仅当前窗口生效,需手动执行'
+        echo 'export http_proxy=http://x.x.x.x:x'
     }
 
     menuname='首页/网络'
