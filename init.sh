@@ -2,7 +2,7 @@
 export LANG=en_US.UTF-8
 #初始化函数
 initself() {
-    selfversion='23.11'
+    selfversion='24.01'
     datevar=$(date +%y%m%d%H%M%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -679,8 +679,18 @@ EOM
 
     }
 
+    #配置临时代理
+    http_proxy(){
+        _blue '配置后仅当前窗口生效'
+        until [[ -n "$url" ]]; do
+                read -ep "请输入地址,如:http://x.x.x.x:x" url
+            done
+        export http_proxy=$url
+        _green '已成功配置'
+    }
+
     menuname='首页/网络'
-    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "实时网速" vnstatfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
+    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" vnstatfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
 
     menu "${options[@]}"
 }
