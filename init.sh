@@ -470,7 +470,6 @@ networktools() {
             echo "----服务状态----"
             fail2banstatusfun
         }
-        
 
         menuname='首页/网络/fail2ban'
         options=("安装配置sshd" installfail2ban "查看状态" fail2banstatusfun)
@@ -680,7 +679,7 @@ EOM
     }
 
     #配置临时代理
-    http_proxy(){
+    http_proxy() {
         _blue '配置后仅当前窗口生效,需手动执行'
         echo 'export http_proxy=http://x.x.x.x:x'
     }
@@ -1291,6 +1290,20 @@ dockerfun() {
 }
 #其他工具
 ordertools() {
+    #多线程下载
+    aria2fun() {
+        #检查aria2是否已安装
+        which aria2c >/dev/null 2>&1
+        if [ $? == 1 ]; then
+        _blue '安装aria2..'
+
+            apt-get install aria2
+        fi
+
+        echo 'aria2c -s 2 -x 2 -c http://xxx/xxx'
+
+    }
+
     #统计目录文件行数
     countfileslines() {
         echo
@@ -1375,8 +1388,9 @@ ordertools() {
         wait
 
     }
+
     menuname='首页/其他工具'
-    options=("统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways)
+    options=("多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways)
     menu "${options[@]}"
 }
 #主函数
