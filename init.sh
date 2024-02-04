@@ -83,7 +83,7 @@ initself() {
         echo
         _yellow '检查系统环境'
         echo
-        if which s >/dev/null; then
+        if _exists 's'; then
 
             _red '检测到已存在s程序，位置：/bin/s 请检查!'
             exit
@@ -291,6 +291,7 @@ initself() {
         done
         echo ${s}
     }
+    #获取操作系统的信息
     get_opsy() {
         [ -f /etc/redhat-release ] && awk '{print $0}' /etc/redhat-release && return
         [ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $3,$4,$5}' /etc/os-release && return
@@ -349,6 +350,28 @@ software() {
         done
         wait
         echo "所有包都已安装完成"
+    }
+
+    #换源
+    changemirrors() {
+        cnmainland() {
+            bash <(curl -sSL https://linuxmirrors.cn/main.sh)
+        }
+        overseas() {
+            bash <(curl -sSL https://raw.githubusercontent.com/SuperManito/LinuxMirrors/main/ChangeMirrors.sh) --abroad
+        }
+
+        menuname='首页/软件/换源'
+        options=("大陆" cnmainland "海外" overseas)
+        menu "${options[@]}"
+
+        if [ -f /etc/apt/sources.list.bak ]; then
+
+            mv /etc/apt/sources.list.bak "/etc/apt/sources.list.bak.$datevar"
+            echo "sources.list.bak 已重命名为 /etc/apt/sources.list.bak.$datevar"
+
+        fi
+
     }
     #安装xray八合一
     installbaheyi() {
@@ -455,7 +478,7 @@ software() {
     }
 
     menuname='首页/软件'
-    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
+    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "换软件源" changemirrors "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
     menu "${options[@]}"
 }
 #网络
@@ -603,8 +626,7 @@ networktools() {
     #iperf3打流
     iperftest() {
 
-        which iperf3 >/dev/null 2>&1
-        if [ $? == 1 ]; then
+        if _exists 'iperf3'; then
             echo "iperf3 未安装,正在安装..."
             apt install iperf3 -y
         fi
@@ -638,8 +660,7 @@ networktools() {
     #nmap扫描
     nmapfun() {
 
-        which nmap >/dev/null 2>&1
-        if [ $? == 1 ]; then
+        if _exists 'nmap'; then
             echo "nmap 未安装,正在安装..."
             apt install nmap -y
         fi
@@ -868,48 +889,6 @@ EOM
 #系统
 sysset() {
 
-    #换源
-    huanyuanfun() {
-        a1804() {
-            echo "deb http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse" >>/etc/apt/sources.list
-        }
-        a2004() {
-            echo "deb http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse" >>/etc/apt/sources.list
-        }
-        a2204() {
-            echo "deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse" >>/etc/apt/sources.list
-            echo "deb-src http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse" >>/etc/apt/sources.list
-        }
-        menuname='首页/系统/换源'
-        options=("18.04(bionic)" a1804 "20.04(focal)" a2004 "22.04(jammy)" a2204)
-        menu "${options[@]}"
-        cp /etc/apt/sources.list /etc/apt/sources.list.bak."$datevar"
-        echo 'ok'
-        echo "原source list已备份至 /etc/apt/sources.list.bak.$datevar"
-        rm /etc/apt/sources.list
-    }
     #同步时间
     synchronization_time() {
         echo "同步前的时间: $(date -R)"
@@ -962,38 +941,15 @@ sysset() {
         ccache=$(awk -F: '/cache size/ {cache=$2} END {print cache}' /proc/cpuinfo | sed 's/^[ \t]*//;s/[ \t]*$//')
         cpu_aes=$(grep -i 'aes' /proc/cpuinfo)
         cpu_virt=$(grep -Ei 'vmx|svm' /proc/cpuinfo)
-        tram=$(
-
-            free | awk '/Mem/ {print $2}'
-        )
-        tram=$(calc_size "$tram")
-        uram=$(
-
-            free | awk '/Mem/ {print $3}'
-        )
-        uram=$(calc_size "$uram")
-        swap=$(
-
-            free | awk '/Swap/ {print $2}'
-        )
+        totalram=$(free | awk '/Mem/ {print $2}')
+        totalram=$(calc_size "$totalram")
+        useram=$(free | awk '/Mem/ {print $3}')
+        useram=$(calc_size "$useram")
+        swap=$(free | awk '/Swap/ {print $2}')
         swap=$(calc_size "$swap")
-        uswap=$(
-
-            free | awk '/Swap/ {print $3}'
-        )
+        uswap=$(free | awk '/Swap/ {print $3}')
         uswap=$(calc_size "$uswap")
         up=$(awk '{a=$1/86400;b=($1%86400)/3600;c=($1%3600)/60} {printf("%d days, %d hour %d min\n",a,b,c)}' /proc/uptime)
-        if _exists "w"; then
-            load=$(
-
-                w | head -1 | awk -F'load average:' '{print $2}' | sed 's/^[ \t]*//;s/[ \t]*$//'
-            )
-        elif _exists "uptime"; then
-            load=$(
-
-                uptime | head -1 | awk -F'load average:' '{print $2}' | sed 's/^[ \t]*//;s/[ \t]*$//'
-            )
-        fi
         opsy=$(get_opsy)
         arch=$(uname -m)
         if _exists "getconf"; then
@@ -1098,7 +1054,7 @@ sysset() {
             echo " VM-x/AMD-V         : $(_red "Disabled")"
         fi
         echo " Total Disk         : $(_yellow "$disk_total_size") $(_blue "($disk_used_size Used)")"
-        echo " Total Mem          : $(_yellow "$tram") $(_blue "($uram Used)")"
+        echo " Total Mem          : $(_yellow "$totalram") $(_blue "($useram Used)")"
         if [ "$swap" != "0" ]; then
             echo " Total Swap         : $(_blue "$swap ($uswap Used)")"
         fi
@@ -1499,7 +1455,7 @@ sysset() {
     }
 
     menuname='首页/系统'
-    options=("sysinfo系统信息" sysinfo "磁盘详细信息" diskinfo "ps进程搜索" pssearch "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "换阿里源" huanyuanfun "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "性能测试" performancetest)
+    options=("sysinfo系统信息" sysinfo "磁盘详细信息" diskinfo "ps进程搜索" pssearch "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "性能测试" performancetest)
 
     menu "${options[@]}"
 
@@ -1586,8 +1542,7 @@ ordertools() {
     #多线程下载
     aria2fun() {
         #检查aria2是否已安装
-        which aria2c >/dev/null 2>&1
-        if [ $? == 1 ]; then
+        if _exists 'aria2c'; then
             _blue '安装aria2..'
 
             apt-get install aria2
@@ -1620,7 +1575,7 @@ ordertools() {
         if ! command -v git &>/dev/null; then
             echo "Git没有安装"
             _blue "Git is already installed"
-        elif which sgit >/dev/null; then
+        elif _exists 'sgit'; then
             _red '系统已存在sgit程序,停止安装,请检查!'
             exit
         else
@@ -1698,8 +1653,7 @@ main() {
 initself
 
 #检查脚本是否已安装
-which init.sh >/dev/null 2>&1
-if [ $? == 1 ]; then
+if !_exists "init.sh"; then
     menuname='脚本安装'
     selfinstall
 fi
