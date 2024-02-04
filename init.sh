@@ -97,7 +97,13 @@ initself() {
 
                 cp -f "$(pwd)/init.sh" /bin/init.sh
                 ln -s /bin/init.sh /bin/s
-                mkdir /etc/s
+
+                if [ -d '/etc/s' ]; then
+
+                    echo "检测到 /etc/s 存在"
+                else
+                    mkdir /etc/s
+                fi
 
                 secho
                 echo
@@ -239,13 +245,7 @@ initself() {
     #检测命令是否存在
     _exists() {
         local cmd="$1"
-        if eval type type >/dev/null 2>&1; then
-            eval type "$cmd" >/dev/null 2>&1
-        elif command >/dev/null 2>&1; then
-            command -v "$cmd" >/dev/null 2>&1
-        else
-            which "$cmd" >/dev/null 2>&1
-        fi
+        which $cmd >/dev/null 2>&1
         local rt=$?
         return ${rt}
     }
@@ -649,7 +649,7 @@ networktools() {
         done
         case $PROTOCOL_CHOICE in
         1)
-            _blue '端口默认为 5201'
+            _blue '端口为 5201 请放行端口'
             iperf3 -s
             ;;
         2)
@@ -1029,7 +1029,6 @@ sysset() {
         fi
 
         echo
-        jumpfun "--类型---------------信息--" 0.04
         if [ -n "$cname" ]; then
             echo " CPU Model          : $(_blue "$cname")"
         else
@@ -1068,20 +1067,13 @@ sysset() {
     }
     #磁盘详细信息
     diskinfo() {
-        jumpfun "--PV物理卷查看--" 0.04
-        pvscan
-        jumpfun "--vgs虚拟卷查看--" 0.04
-        vgs
-        jumpfun "--lvscan逻辑卷扫描--" 0.04
-        lvscan
-        jumpfun "--文件系统信息--" 0.04
-        more /etc/fstab | grep -v "^#" | grep -v "^$"
-        echo
-        jumpfun "--分区信息--" 0.04
-        df -Th
-        lsblk
         jumpfun "--fdisk信息--" 0.04
         fdisk -l
+        jumpfun "--lsblk块设备信息--" 0.04
+        lsblk
+        jumpfun "--分区信息--" 0.04
+        df -Th
+        echo
         nextrun
     }
     #系统检查
@@ -1653,9 +1645,9 @@ main() {
 initself
 
 #检查脚本是否已安装
-if !_exists "init.sh"; then
+if _exists 'init.sh'; then
+    main
+else
     menuname='脚本安装'
     selfinstall
 fi
-
-main
