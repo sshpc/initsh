@@ -1650,4 +1650,5 @@ if _exists 'init.sh'; then
 else
     menuname='脚本安装'
     selfinstall
+    s
 fi
