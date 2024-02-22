@@ -1,12 +1,52 @@
 # Ubuntu 初始化&工具脚本
 
-## 一、介绍
+## 安装
 
-1. 交互式数字操作 [查看示例](#2首次运行会直接安装)
+### 一键安装(推荐)
+> 推荐 root 用户
+
+```sh
+wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && sudo ./init.sh
+```
+
+> 再次执行只需要输入 “s” 
+
+```sh
+ root@server:~#  s
+```
+
+
+> 跳过安装,仅执行脚本
+```sh
+bash <(curl -sSL http://raw.githubusercontent.com/sshpc/initsh/main/init.sh)
+```
+## 示例
+
+```sh
+>~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  v: x.x
+
+当前菜单: 首页 
+
+1: soft软件管理      2: network网络管理
+
+3: system系统管理    4: docker
+
+5: 其他工具          6: 升级脚本
+
+7: 卸载脚本
+
+q: 退出  
+
+请输入命令号: 
+```
+
+## 介绍
+
+1. 简单交互式操作 
 2. Ubuntu 1804+ (建议)、 Debian 10+ 
 3. [查看文档](Documents.md)
 
-## 二、功能
+## 功能
 
 * 一键换阿里源
 * 配置物理机静态ip，dhcp
@@ -27,46 +67,7 @@
 * 临时http代理
 * 持续更新...
 
-## 三、安装使用
 
-#### 1.一键运行脚本
 
-> 最好 root 用户
 
-```sh
-wget -N  http://raw.githubusercontent.com/sshpc/initsh/main/init.sh && chmod +x init.sh && sudo ./init.sh
-```
-
-##### 2.首次运行会直接安装
-
-> 脚本安装进\bin 执行了软连接 s
-> 安装后任意位置可用命令 s 直接运行
-
-```sh
- root@server:~#  s
-```
-
----
-
-## 四、示例
-
-#### 主页
-
-```sh
->~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  版本:vx.x.x
-
-当前菜单: 首页 
-
-1: soft软件管理      2: network网络管理
-
-3: system系统管理    4: docker
-
-5: 其他工具          6: 升级脚本
-
-7: 卸载脚本
-
-q: 退出  
-
-请输入命令号: 
-```
 

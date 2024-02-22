@@ -5,8 +5,8 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.01'
-    datevar=$(date +%y%m%d%H%M%S)
+    selfversion='24.02'
+    datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
     #父级函数名
@@ -63,22 +63,48 @@ initself() {
         done
         echo
     }
+    #logo
+    secho() {
+        echo
+        _green '   ________       '
+        _green '  |\   ____\      '
+        _green '  \ \  \___|_     '
+        _green '   \ \_____  \    '
+        _green '    \|____|\  \   '
+        _green '      ____\_\  \  '
+        _green '     |\_________\ '
+        _green '     \|_________| '
+        echo
+    }
+    #s日志读写
+    slog() {
+        local method=$1 #set or get
+        local file=$2
+        local info=$3
+        #检查是否已安装
+        if _exists 'init.sh'; then
+
+            case $method in
+            set) #写入#
+                echo $info >>/etc/s/$file.log
+                ;;
+            get) #读取#
+                cat /etc/s/$file.log
+
+                ;;
+            *)
+                echo 'log error'
+
+                ;;
+            esac
+
+        fi
+    }
 
     #安装脚本
     selfinstall() {
         menutop
-        secho() {
-            echo
-            _green '   ________       '
-            _green '  |\   ____\      '
-            _green '  \ \  \___|_     '
-            _green '   \ \_____  \    '
-            _green '    \|____|\  \   '
-            _green '      ____\_\  \  '
-            _green '     |\_________\ '
-            _green '     \|_________| '
-            echo
-        }
+
         jumpfun "welcome" 0.06
         echo
         _yellow '检查系统环境'
@@ -90,48 +116,48 @@ initself() {
         else
 
             menuname='首页'
-            if [ -e "$(pwd)/init.sh" ]; then
-                jumpfun '开始安装脚本 ' 0.04
-                echo
-                jumpfun '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' 0.02
 
-                cp -f "$(pwd)/init.sh" /bin/init.sh
-                ln -s /bin/init.sh /bin/s
+            jumpfun '开始安装脚本 ' 0.04
+            echo
+            jumpfun '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' 0.02
 
-                if [ -d '/etc/s' ]; then
+            cp -f "$(pwd)/init.sh" /bin/init.sh
+            ln -s /bin/init.sh /bin/s
 
-                    echo "检测到 /etc/s 存在"
-                else
-                    mkdir /etc/s
-                fi
+            if [ -d '/etc/s' ]; then
 
-                secho
-                echo
-                echo '文件释放位置： /bin/init.sh  /bin/s /etc/s'
-
-                echo
-                echo "提示：再次执行任意位置键入 's' "
-                echo
-                _blue '成功安装'
-                echo 's脚本安装 ' $datevar >>/etc/s/s.log
-
-                echo
-                waitinput
-                clear
+                echo "检测到 /etc/s 存在 安装更新..."
+                #写入日志
+                slog set install "$datevar--安装更新--v$selfversion"
             else
-                _yellow "没有此脚本文件，跳过安装，仅运行"
-                waitinput
-                clear
+                mkdir /etc/s
+                #写入日志
+                slog set install "$datevar--脚本全新安装--v$selfversion"
             fi
+
+            secho
+            _blue '成功安装 s '
+            echo
+            echo '文件释放位置： /bin/init.sh  /bin/s 日志： /etc/s/*'
+
+            echo
+            echo "提示：再次执行任意位置键入 's' "
+            echo
+
+            echo
+            waitinput
+            clear
+
         fi
     }
     #卸载脚本
     removeself() {
+        #写入日志
+        slog set install "$datevar--脚本卸载--v$selfversion"
         rm -rf /bin/init.sh
         rm -rf /bin/s
         echo '删除/bin/init.sh  /bin/s'
-        echo 's脚本卸载 ' $datevar >>/etc/s/s.log
-        read -ep "是否删除/etc/s 日志目录 y or n (回车默认n): " yorn
+        read -ep "是否删除日志目录/etc/s (默认n): " yorn
         if [[ "$yorn" = "y" ]]; then
             rm -rf /etc/s
         fi
@@ -1411,7 +1437,8 @@ sysset() {
             service $servicename start
             echo
             _blue "操作完成"
-            echo add $servicename $datevar >>/etc/s/service.log
+            #写入日志
+            slog set service "add-service--$servicename--$datevar"
 
             service $servicename status
 
@@ -1423,7 +1450,8 @@ sysset() {
 
         servicedel() {
 
-            more /etc/s/service.log
+            #读取日志
+            slog get service
             echo
             read -ep "请输入删除的服务名称: " servicename
             service $servicename stop
@@ -1432,8 +1460,9 @@ sysset() {
 
             rm -rf /etc/init.d/$servicename
             rm -rf /etc/systemd/system/$servicename.service
+            #写入日志
+            slog set service "del-service--$servicename--$datevar"
 
-            echo del $servicename $datevar >>/etc/s/service.log
             _blue "操作完成"
             echo " "
 
@@ -1644,11 +1673,22 @@ main() {
 #初始化
 initself
 
-#检查脚本是否已安装
-if _exists 'init.sh'; then
-    main
+#检查当前目录是否存在脚本
+if [ -e "$(pwd)/init.sh" ]; then
+    #存在检查是否已安装
+
+    if _exists 'init.sh'; then
+        main
+    else
+        menuname='脚本安装'
+        selfinstall
+        s
+    fi
+
 else
-    menuname='脚本安装'
-    selfinstall
-    s
+
+    echo "没有此脚本文件，跳过安装，仅运行..."
+    secho
+    jumpfun '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' 0.02
+    main
 fi
