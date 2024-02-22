@@ -109,29 +109,19 @@ service cron reload 立即生效
 
 ### 配置自定义服务
 
-#### 添加服务
-适用：一个无限循环的sh脚本（例如DDNS，检测。。）想要 灵活启停 开机自启
+适用：需要配置成守护进程的程序  一个无限循环的sh脚本（例如DDNS，检测。。）想要 灵活启停 开机自启
 
-sysvinit方式 传统方式兼容性好  service xxx start/stop
-systemd方式 采用并行启动的方式提供了更多的功能和特性.主流init系统 systemctl start/stop xxx
+sysvinit方式 service xxx start/stop 传统方式兼容性好  
+systemd方式(推荐) systemctl start/stop xxx 采用并行启动的方式提供了更多的功能和特性.主流init系统 
 
->一般用sysvinit就可以
-运行后 需要提供  
-1.服务名称（最后配置好 service xxx start/stop  里的xxx的名字）
-2.脚本绝对路径
->服务名称需与脚本名称一致  例如绝对路径是/root/ddns.sh  服务名称必须是ddns
+需要提供  
+服务名称（最后配置好 service xxx start/stop  里的xxx的名字）
+启动命令
+终止命令可选 默认pkill -f 服务名称
 
-最后会生成运行日志/root/xxx.log
-
-同时在/etc/s/service.log 计入日志
+同时在/etc/s/ 计入日志
 
 
-#### 删除服务
-打印 /etc/s/service.log 操作日志
-选择服务名 删除
->sysvinit方式 systemd方式 通用
-会先停止服务 删除服务系统配置项 删除文件
-同时在/etc/s/service.log 计入日志
 
 ## docker
 基本docker命令
