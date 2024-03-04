@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.02'
+    selfversion='24.03'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -687,7 +687,10 @@ networktools() {
     nmapfun() {
 
         if _exists 'nmap'; then
-            echo "nmap 未安装,正在安装..."
+            echo "nmap 已安装"
+            
+        else
+        echo "nmap 未安装,正在安装..."
             apt install nmap -y
         fi
 
@@ -706,7 +709,7 @@ networktools() {
 
             read -ep "请输入ip: " ip
             read -ep "请输入端口(1-65535): " port
-            nmap "$ip" -p "$port"
+            nmap "$ip" -p "$port" -Pn
         }
 
         echo "1.主机探测  2.端口扫描"
@@ -719,7 +722,7 @@ networktools() {
             nmapdetection
             ;;
         2)
-            _blue '默认扫描1-65535 扫描「指定端口」nmap ip -p 1-2000'
+            _blue '示例 nmap ip -p 1-2000 -Pn'
             nmapportcat
             ;;
         esac
