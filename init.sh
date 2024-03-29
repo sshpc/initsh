@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.03'
+    selfversion='24.04'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -1765,7 +1765,8 @@ ordertools() {
     }
     pingalways() {
         read -rp "目标主机:" -e target_host
-        read -rp "ping请求的参数: " -e -i -t -l 4096 ping_options
+        echo '默认 -s 65500 -i 0.1 '
+        read -rp "ping请求的参数默认: " -e -i '-s 65500 -i 0.1' ping_options
         read -rp "并发数: " -e -i 10 concurrency
 
         # 数组用于存储ping进程的进程ID
