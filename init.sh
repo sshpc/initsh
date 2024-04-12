@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.04'
+    selfversion='24.04.12'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -236,7 +236,10 @@ initself() {
             echo
             exit
         else
-            _yellow '>~~~~~~~~~~~~~~~输入有误~~~~~~~~~~~~~~~~~<'
+            echo
+            _red '输入有误  回车返回首页'
+            waitinput
+            main
         fi
 
     }
@@ -1698,6 +1701,13 @@ dockerfun() {
 }
 #其他工具
 ordertools() {
+    #统计根目录占用
+    statisticsusage(){
+        _blue '占用空间最多的前10文件夹'
+        du -sh /* | sort -rh | head -n 10
+        _blue '占用空间最多的前50文件'
+        find / -type f -not -path "/proc/*" -not -path "/sys/*" -exec du -ah {} + | sort -rh | head -n 50
+    }
     #多线程下载
     aria2fun() {
         #检查aria2是否已安装
@@ -1798,7 +1808,7 @@ ordertools() {
     }
 
     menuname='首页/其他工具'
-    options=("多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways)
+    options=("统计根目录占用" statisticsusage "多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways)
     menu "${options[@]}"
 }
 #主函数
@@ -1825,9 +1835,5 @@ if [ -e "$(pwd)/init.sh" ]; then
     fi
 
 else
-
-    echo "没有此脚本文件，跳过安装，仅运行..."
-    secho
-    jumpfun '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' 0.02
     main
 fi
