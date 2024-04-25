@@ -23,6 +23,10 @@ openvpn server 端 脚本提供：https://github.com/angristan/openvpn-install
 ### 安装btop
 btop 提供了CPU 使用率、内存使用率、磁盘使用率和网络流量直观的界面，以图形化的形式显示系统资源的使用情况
 
+### 安装aapanel
+宝塔国际版 无需登录 https://aapanel.com/new/download.html#install
+
+
 ### 卸载
 手动输入 
 软件包名 或服务名 批量执行类似 rm -rf /etc/ rm -rf /usr/bin

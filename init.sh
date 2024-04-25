@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.04.12'
+    selfversion='24.04.25'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -209,7 +209,7 @@ initself() {
         done
         # 渲染菜单
         for ((i = 0; i < num_options; i += 4)); do
-            printf "%s%*s  " "$((i / 2 + 1)): ${options[i]}" $((max_len - ${#options[i]})) ""
+            printf "%s%*s  " "$((i / 2 + 1)): ${options[i]}" "$((max_len - ${#options[i]}))"
             if [[ "${options[i + 2]}" != "" ]]; then printf "$((i / 2 + 2)): ${options[i + 2]}"; fi
             echo
             echo
@@ -506,8 +506,12 @@ software() {
         btop
     }
 
+    installaapanel(){
+       local URL=https://www.aapanel.com/script/install_6.0_en.sh && if [ -f /usr/bin/curl ];then curl -ksSO "$URL" ;else wget --no-check-certificate -O install_6.0_en.sh "$URL";fi;bash install_6.0_en.sh aapanel
+    }
+
     menuname='首页/软件'
-    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "换软件源" changemirrors "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn)
+    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "换软件源" changemirrors "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn "安装aapanel" installaapanel)
     menu "${options[@]}"
 }
 #网络
@@ -691,9 +695,9 @@ networktools() {
 
         if _exists 'nmap'; then
             echo "nmap 已安装"
-            
+
         else
-        echo "nmap 未安装,正在安装..."
+            echo "nmap 未安装,正在安装..."
             apt install nmap -y
         fi
 
@@ -1702,7 +1706,7 @@ dockerfun() {
 #其他工具
 ordertools() {
     #统计根目录占用
-    statisticsusage(){
+    statisticsusage() {
         _blue '占用空间最多的前10文件夹'
         du -sh /* | sort -rh | head -n 10
         _blue '占用空间最多的前50文件'
