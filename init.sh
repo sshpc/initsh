@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.04.26'
+    selfversion='24.08.23'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -228,6 +228,9 @@ initself() {
             parentfun=${options[action_index]}
             #函数执行
             ${options[action_index]}
+            #执行完后自动返回
+            waitinput
+            ${FUNCNAME[3]}
         elif [[ $number == 0 ]]; then
             main
         elif [[ $number == 'b' ]]; then
@@ -506,12 +509,13 @@ software() {
         btop
     }
 
-    installaapanel(){
-       local URL=https://www.aapanel.com/script/install_6.0_en.sh && if [ -f /usr/bin/curl ];then curl -ksSO "$URL" ;else wget --no-check-certificate -O install_6.0_en.sh "$URL";fi;bash install_6.0_en.sh aapanel
+    installaapanel() {
+        local URL=https://www.aapanel.com/script/install_6.0_en.sh && if [ -f /usr/bin/curl ]; then curl -ksSO "$URL"; else wget --no-check-certificate -O install_6.0_en.sh "$URL"; fi
+        bash install_6.0_en.sh aapanel
     }
 
-    installrustdeskserver(){
-        wget -N  http://raw.githubusercontent.com/sshpc/rustdesktool/main/rustdesktool.sh && chmod +x ./rustdesktool.sh && ./rustdesktool.sh
+    installrustdeskserver() {
+        wget -N http://raw.githubusercontent.com/sshpc/rustdesktool/main/rustdesktool.sh && chmod +x ./rustdesktool.sh && ./rustdesktool.sh
     }
 
     menuname='首页/软件'
@@ -523,18 +527,29 @@ networktools() {
 
     #ufw防火墙
     ufwfun() {
-        ufwinstall() {
-            apt install ufw -y
-            echo "ufw 已安装"
+        ufwopen() {
+
+            if _exists 'ufw'; then
+                echo "ufw 已安装"
+            else
+                echo "ufw 未安装,正在安装..."
+                apt install ufw -y
+                echo "ufw 已安装"
+            fi
+
             echo "请输入y以开启ufw"
             ufw enable
             echo "ufw已开启"
+        }
+
+        ufwdefault() {
             ufw allow 22
             echo "已配置允许 22 端口"
             ufw default deny
-            echo "已配置关闭所有外部对本机的访问"
+            echo "拒绝全部传入"
             ufwstatus
         }
+
         ufwadd() {
             read -ep "请输入端口号 (0-65535): " port
             until [[ -n "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
@@ -546,7 +561,7 @@ networktools() {
             ufwstatus
         }
         ufwstatus() {
-            ufw status
+            ufw status verbose
             echo "提示:inactive 关闭状态 , active 开启状态"
         }
         ufwclose() {
@@ -565,8 +580,58 @@ networktools() {
             ufwstatus
         }
 
+        ufwlogtail() {
+            tail -f /var/log/ufw.log
+        }
+
+        setufwfromip() {
+
+            # 函数：允许特定 IP 和端口的入站流量
+            allow_ip_port() {
+
+                read -ep "请输入ip: " ip
+                read -ep "请输入端口号 (0-65535): " unport
+                until [[ -n "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
+                    echo "$unport: 无效端口."
+                    read -ep "请输入端口号 (0-65535): " unport
+                done
+
+                echo "ip:$ip  端口:$unport"
+                waitinput
+                ufw allow from $ip to any port $unport
+
+                _blue 'ok'
+
+                ufwstatus
+
+            }
+
+            # 函数：拒绝特定 IP 和端口的入站流量
+            deny_ip_port() {
+                read -ep "请输入ip: " ip
+                read -ep "请输入端口号 (0-65535): " unport
+                until [[ -n "$unport" || "$unport" =~ ^[0-9]+$ && "$unport" -le 65535 ]]; do
+                    echo "$unport: 无效端口."
+                    read -ep "请输入端口号 (0-65535): " unport
+                done
+
+                echo "ip:$ip  端口:$unport"
+                waitinput
+
+                ufw deny from $ip to any port $unport
+
+                _blue 'ok'
+
+                ufwstatus
+            }
+
+            menuname='首页/网络/ufw/特定ip操作'
+            options=("允许特定IP和端口的入站流量" allow_ip_port "拒绝特定IP和端口的入站流量" deny_ip_port)
+            menu "${options[@]}"
+        }
+
         menuname='首页/网络/ufw'
-        options=("开启ufw" ufwinstall "关闭ufw" ufwdisablefun "ufw状态" ufwstatus "添加端口" ufwadd "关闭端口" ufwclose)
+        options=("开启ufw" ufwopen "关闭ufw" ufwdisablefun "ufw默认配置仅ssh" ufwdefault "ufw状态" ufwstatus "查看实时日志" ufwlogtail "添加端口" ufwadd "关闭端口" ufwclose "对特定ip操作" setufwfromip)
         menu "${options[@]}"
 
     }
@@ -653,10 +718,12 @@ networktools() {
             echo "Region             : $(_red "No ISP detected")"
         fi
         jumpfun "--IP连接数--" 0.04
+        waitinput
         echo '   数量 ip'
         netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
         echo
         jumpfun "--ssh失败记录--" 0.04
+        waitinput
         lastb | grep root | awk '{print $3}' | sort | uniq
         echo
     }
@@ -664,6 +731,8 @@ networktools() {
     iperftest() {
 
         if _exists 'iperf3'; then
+            echo "iperf3 已安装"
+        else
             echo "iperf3 未安装,正在安装..."
             apt install iperf3 -y
         fi
