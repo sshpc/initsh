@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.08.23'
+    selfversion='24.12.03'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -134,6 +134,7 @@ initself() {
                 #写入日志
                 slog set install "$datevar--脚本全新安装--v$selfversion"
             fi
+            touch /etc/s/lastfun
 
             secho
             _blue '成功安装 s '
@@ -216,7 +217,8 @@ initself() {
         done
         echo
         printf '\033[0;31;36m%b\033[0m' "q: 退出  "
-        if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "b: 返回  0: 首页"; fi
+        #if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "b: 返回  0: 首页"; fi
+        printf '\033[0;31;36m%b\033[0m' "b: 返回  0: 首页";
         echo
         echo
         # 获取用户输入
@@ -270,7 +272,6 @@ initself() {
             rm -rf ./speedtest-cli
         fi
         _red "\nThe script has been terminated.\n"
-
         exit 1
     }
 
@@ -358,7 +359,7 @@ software() {
     }
     #安装常用包
     installcomso() {
-        echo "开始异步安装.."
+        echo "开始安装.."
         install_package() {
             package_name=$1
             echo "开始安装 $package_name"
@@ -378,9 +379,8 @@ software() {
         )
         for package in "${packages[@]}"; do
             package_name="${package%:*}"
-            install_package "$package_name" &
+            install_package "$package_name"
         done
-        wait
         echo "所有包都已安装完成"
     }
 
@@ -518,8 +518,31 @@ software() {
         wget -N http://raw.githubusercontent.com/sshpc/rustdesktool/main/rustdesktool.sh && chmod +x ./rustdesktool.sh && ./rustdesktool.sh
     }
 
+    snapfun() {
+        snapls() {
+            echo
+            _blue version:
+            echo
+            snap version
+            echo
+            _blue list:
+            echo
+            snap list
+        }
+
+        installsnapfun() {
+            apt install snap -y
+            apt install snapd -y
+        }
+
+        menuname='首页/软件/snap管理'
+        options=("查看 snap 状态" snapls "安装" installsnapfun)
+        menu "${options[@]}"
+    }
+
     menuname='首页/软件'
-    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "换软件源" changemirrors "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn "安装aapanel" installaapanel "安装RustDesk-Server" installrustdeskserver)
+    echo "software" >/etc/s/lastfun
+    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "换软件源" changemirrors "snap管理" snapfun "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn "安装aapanel" installaapanel "安装RustDesk-Server" installrustdeskserver)
     menu "${options[@]}"
 }
 #网络
@@ -990,6 +1013,7 @@ EOM
     }
 
     menuname='首页/网络'
+    echo "networktools" >/etc/s/lastfun
     options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" vnstatfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
 
     menu "${options[@]}"
@@ -1694,6 +1718,7 @@ sysset() {
     }
 
     menuname='首页/系统'
+    echo "sysset" >/etc/s/lastfun
     options=("sysinfo系统信息" sysinfo "磁盘详细信息" diskinfo "ps进程搜索" pssearch "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "性能测试" performancetest)
 
     menu "${options[@]}"
@@ -1702,77 +1727,171 @@ sysset() {
 #docker
 dockerfun() {
 
-    dockerrund() {
-        echo
-        docker images
-        echo
-        read -ep "请输入镜像包名或id REPOSITORY: " dcimage
-        read -ep "请输入容器端口: " conport
-        read -ep "请输入宿主机端口: " muport
-        read -ep "请输入执行参数: " param
-        docker run -d -p $muport:$conport $dcimage $param
-        echo "$dcimage 已在后台运行中"
-    }
-    dockerrunit() {
-        echo
-        docker images
-        echo
-        read -ep "请输入镜像包名或id REPOSITORY: " dcimage
-        read -ep "请输入容器端口: " conport
-        read -ep "请输入宿主机端口: " muport
-        read -ep "请输入执行参数(默认/bin/bash): " -i '/bin/bash' param
-        docker run -it -p $muport:$conport $dcimage $param
-        echo "$dcimage 后台运行中"
-    }
+    
     dockerexec() {
+        # 获取所有正在运行的容器
+        containers=$(docker ps --format 'table {{.ID}}\t{{.Names}}')
+
+        # 打印容器列表并添加序号
         echo
-        docker ps
+        _blue "当前正在运行的容器："
+        echo "序号   容器ID         容器名称"
+        i=1
+        while read -r line; do
+            if [[ $line != "CONTAINER ID"* ]]; then # 跳过标题行
+                echo -e "$i\t$line"
+                ((i++))
+            fi
+        done <<<"$containers"
         echo
-        read -ep "请输入容器名或id: " containerd
-        read -ep "请输入执行参数(默认/bin/bash): " -i '/bin/bash' param
-        docker exec -it $containerd $param
+        read -p "请输入容器序号（从 1 开始）： " index
+
+        # 获取容器的 ID 列表
+        container_ids=($(docker ps -q))
+
+        # 检查输入的序号是否有效
+        if [[ "$index" -gt 0 && "$index" -le "${#container_ids[@]}" ]]; then
+            container_id=${container_ids[$((index - 1))]}
+
+            docker exec -it "$container_id" /bin/bash
+        else
+            echo "无效的序号，请输入有效的序号。"
+        fi
+        nextrun
+
     }
     dockerimagesfun() {
         docker images
         nextrun
     }
-    dockerpsfun() {
-        echo 'runing'
-        docker ps
-        echo '所有'
-        docker ps -a
-        nextrun
+    
+    composestart() {
+        docker-compose up -d
+
     }
-    opencon() {
-        echo
-        docker ps -a
-        echo
-        read -ep "请输入容器名或id: " containerd
-        docker start $containerd
-        echo
-        echo "正在运行的容器 "
-        docker ps
+
+    composestop() {
+        docker-compose down
     }
-    stopcon() {
-        echo
-        docker ps
-        echo
-        read -ep "请输入容器名或id: " containerd
-        docker stop $containerd
-        echo "正在运行的容器 "
-        docker ps
+
+    composestart() {
+        docker-compose start
+
     }
-    rmcon() {
+
+    composestop() {
+        docker-compose stop
+    }
+
+    composeps() {
         echo
-        docker ps -a
+        echo "compose情况"
         echo
-        read -ep "请输入容器名或id: " containerd
-        docker rm -f $containerd
-        echo "所有容器 "
+        docker-compose ps
+        echo
+        echo "容器情况"
+        echo
+        _green 'runing'
+        docker ps
+        _blue 'all'
         docker ps -a
+    }
+
+    catdockervolume() {
+        echo
+        echo "卷名              路径"
+        for volume in $(docker volume ls -q); do
+            _blue "$volume  $(docker volume inspect "$volume" --format '{{.Mountpoint}}')"
+        done
+    }
+
+    restartcontainer() {
+
+        # 获取所有正在运行的容器
+        containers=$(docker ps --format 'table {{.ID}}\t{{.Names}}')
+
+        # 打印容器列表并添加序号
+        echo "当前正在运行的容器："
+        echo "序号   容器ID         容器名称"
+        i=1
+        while read -r line; do
+            if [[ $line != "CONTAINER ID"* ]]; then # 跳过标题行
+                echo -e "$i\t$line"
+                ((i++))
+            fi
+        done <<<"$containers"
+
+        # 提示用户输入要重启的容器序号
+        read -p "请输入要重启的容器序号（从 1 开始）： " index
+
+        # 获取容器的 ID 列表
+        container_ids=($(docker ps -q))
+
+        # 检查输入的序号是否有效
+        if [[ "$index" -gt 0 && "$index" -le "${#container_ids[@]}" ]]; then
+            container_id=${container_ids[$((index - 1))]}
+
+            # 重启容器
+            _blue "正在重启容器：$index"
+            docker restart "$container_id"
+            _green "已重启"
+        else
+            echo "无效的序号，请输入有效的序号。"
+        fi
+    }
+
+    catcomposelogs() {
+        docker-compose logs
+    }
+
+    #维护
+    maintenancefun() {
+
+        composeinstall() {
+            docker-compose up -d --build
+
+            _blue '创建命名卷软连接'
+
+            # 获取当前目录
+            current_dir=$(pwd)
+            # 列出所有卷并遍历
+            for volume in $(docker volume ls -q); do
+                # 获取卷的真实路径
+                mountpoint=$(docker volume inspect "$volume" --format '{{.Mountpoint}}')
+
+                # 在当前目录创建指向真实路径的符号链接
+                ln -s "$mountpoint" "$current_dir/$volume"
+
+                _green "Created symlink for volume '$volume' at '$current_dir/$volume' -> '$mountpoint'"
+            done
+
+        }
+
+        dockerinstall() {
+            apt install snap snapd
+            snap install docker
+        }
+
+        dockervolumerm() {
+            catdockervolume
+            echo
+            _red '确定全部删除吗?'
+            waitinput
+            _red "删除并移除软链接"
+            for volume in $(docker volume ls -q); do
+                docker volume rm $volume
+                rm -r $volume
+            done
+        }
+
+        menuname='首页/docker/维护'
+        options=("安装docker" dockerinstall "安装" composeinstall "开启" composestart "终止" composestop "删除所有命名卷" dockervolumerm)
+
+        menu "${options[@]}"
     }
     menuname='首页/docker'
-    options=("查看docker镜像" dockerimagesfun "查看容器" dockerpsfun "后台运行一个容器" dockerrund "运行一个终端交互容器" dockerrunit "进入交互式容器" dockerexec "开启一个容器" opencon "停止一个容器" stopcon "删除一个容器" rmcon)
+    echo "dockerfun" >/etc/s/lastfun
+    options=("启动" composestart "停止" composestop "查看状态" composeps "进入交互式容器" dockerexec "重启容器" restartcontainer "查看数据卷" catdockervolume "查看compose logs日志" catcomposelogs "安装&维护" maintenancefun "查看镜像" dockerimagesfun )
 
     menu "${options[@]}"
 }
@@ -1885,6 +2004,7 @@ ordertools() {
     }
 
     menuname='首页/其他工具'
+    echo "ordertools" >/etc/s/lastfun
     options=("统计根目录占用" statisticsusage "多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways)
     menu "${options[@]}"
 }
@@ -1892,6 +2012,7 @@ ordertools() {
 main() {
 
     menuname='首页'
+    echo "main" >/etc/s/lastfun
     options=("soft软件管理" software "network网络管理" networktools "system系统管理" sysset "docker" dockerfun "其他工具" ordertools "升级脚本" updateself "卸载脚本" removeself)
     menu "${options[@]}"
 }
@@ -1904,7 +2025,13 @@ if [ -e "$(pwd)/init.sh" ]; then
     #存在检查是否已安装
 
     if _exists 'init.sh'; then
-        main
+
+        if [ -z "$(cat /etc/s/lastfun)" ]; then
+            main
+        else
+            $(cat /etc/s/lastfun) 
+        fi
+        
     else
         menuname='脚本安装'
         selfinstall

@@ -130,6 +130,8 @@ systemd方式(推荐) systemctl start/stop xxx 采用并行启动的方式提供
 ## docker
 基本docker命令
 
+docker-composer 支持
+
 ## 其他工具
 
 ### 统计目录文件行数
