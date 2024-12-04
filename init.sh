@@ -540,9 +540,14 @@ software() {
         menu "${options[@]}"
     }
 
+    dockerinstall() {
+            apt install snap snapd
+            snap install docker
+    }
+
     menuname='首页/软件'
     echo "software" >/etc/s/lastfun
-    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "换软件源" changemirrors "snap管理" snapfun "软件卸载" removefun "安装常用包" installcomso "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn "安装aapanel" installaapanel "安装RustDesk-Server" installrustdeskserver)
+    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "换软件源" changemirrors "snap管理" snapfun "软件卸载" removefun "安装常用包" installcomso "安装docker" dockerinstall "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn "安装aapanel" installaapanel "安装RustDesk-Server" installrustdeskserver)
     menu "${options[@]}"
 }
 #网络
@@ -1770,9 +1775,7 @@ dockerfun() {
 
     }
 
-    composestop() {
-        docker-compose down
-    }
+    
 
     composestart() {
         docker-compose start
@@ -1867,9 +1870,8 @@ dockerfun() {
 
         }
 
-        dockerinstall() {
-            apt install snap snapd
-            snap install docker
+        composedown() {
+        docker-compose down
         }
 
         dockervolumerm() {
@@ -1884,8 +1886,10 @@ dockerfun() {
             done
         }
 
+        
+
         menuname='首页/docker/维护'
-        options=("安装docker" dockerinstall "安装" composeinstall "开启" composestart "终止" composestop "删除所有命名卷" dockervolumerm)
+        options=("开启" composestart "终止" composedown "安装-build" composeinstall "删除所有命名卷" dockervolumerm)
 
         menu "${options[@]}"
     }
@@ -2039,5 +2043,9 @@ if [ -e "$(pwd)/init.sh" ]; then
     fi
 
 else
-    main
+    if [ -z "$(cat /etc/s/lastfun)" ]; then
+            main
+        else
+            $(cat /etc/s/lastfun) 
+        fi
 fi
