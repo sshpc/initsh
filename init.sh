@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.12.03'
+    selfversion='24.12.6'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -1434,8 +1434,13 @@ sysset() {
                 echo " $(_red "Not enough space for I/O Speed test!")"
             fi
         }
+
+        FastBenchfun(){
+            wget -N  http://raw.githubusercontent.com/sshpc/FastBench/main/FastBench.sh && chmod +x FastBench.sh && sudo ./FastBench.sh
+        }
+
         menuname='首页/系统/性能测试'
-        options=("sysbench-cpu测试" sysbenchcputest "stress-cpu压测" cputest "磁盘测速" iotestspeed)
+        options=("sysbench-cpu测试" sysbenchcputest "stress-cpu压测" cputest "磁盘测速" iotestspeed "跑分" FastBenchfun)
 
         menu "${options[@]}"
 
