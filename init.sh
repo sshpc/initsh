@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.12.6'
+    selfversion='24.12'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -1891,10 +1891,71 @@ dockerfun() {
             done
         }
 
+        createtemplate(){
+            cat <<EOM >docker-compose.yml
+version: '3.8'
+
+services:
+  
+  worker:
+    container_name: worker
+    #image: nginx:latest  # 使用的 Docker 镜像，这里是 Nginx 的最新版本
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./www:/var/www           # 网站根目录
+    ports:
+      - "1238:1238"                     
+      - "8888:8888"                  # 映射端口 
+    restart: always                    # 容器随 Docker 启动
+    command: ["php", "/var/www/GatewayWorker/start.php", "start"]
+    #environment:  # 设置环境变量
+    #  - MYSQL_HOST=database  # 可以引用其他服务，这里假设有一个名为 database 的服务
+    #  - MYSQL_PORT=3306
+
+    networks:
+      - shared_network
+
+networks:
+  shared_network:
+    external: true  # 表示这是一个外部网络
+
+
+                                                 
+EOM
+
+cat <<EOM >Dockerfile
+# 使用 PHP  和 Apache 的基础镜像
+FROM php:7.4.33-apache
+
+# 安装必要的 PHP 扩展
+RUN docker-php-ext-install pcntl
+RUN apt update && apt install iputils-ping iproute2 -y
+# 安装redis
+#RUN pecl install -y redis
+#RUN docker-php-ext-enable redis
+
+# 启用 Apache 模块
+# RUN a2enmod rewrite
+
+# 设置工作目录
+WORKDIR /var/www
+
+# 复制本地的 PHP 配置文件（如果需要）
+# COPY ./php.ini /usr/local/etc/php/
+
+                                                 
+EOM
+echo
+_green '已在当前目录创建 Dockerfile  docker-compose.yml'
+echo
+        }
+
         
 
         menuname='首页/docker/维护'
-        options=("开启" composestart "终止" composedown "安装-build" composeinstall "删除所有命名卷" dockervolumerm)
+        options=("开启" composestart "终止" composedown "安装-build" composeinstall "创建模板文件" createtemplate "删除所有命名卷" dockervolumerm)
 
         menu "${options[@]}"
     }
