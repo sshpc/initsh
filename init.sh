@@ -1858,10 +1858,13 @@ dockerfun() {
         composeinstall() {
             docker-compose up -d --build
 
-            _blue '创建命名卷软连接'
+            if [ $? -eq 0 ]; then
+            _blue '创建命名卷软连接 /home/docker/volume'
 
-            # 获取当前目录
-            current_dir=$(pwd)
+            # 获取目录
+            #current_dir=$(pwd)
+            mkdir -p  /home/docker/volume
+            current_dir=/home/docker/volume
             # 列出所有卷并遍历
             for volume in $(docker volume ls -q); do
                 # 获取卷的真实路径
@@ -1872,6 +1875,7 @@ dockerfun() {
 
                 _green "Created symlink for volume '$volume' at '$current_dir/$volume' -> '$mountpoint'"
             done
+            fi
 
         }
 
@@ -1905,21 +1909,56 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./www:/var/www           # 网站根目录
+      - apache-config:/etc/apache2  # Apache 配置目录
+      - php-config:/usr/local/etc/php  # PHP 配置目录
+    #volumes:
+    # - ./www:/var/www           # 网站根目录
+    depends_on:
+      - db
     ports:
       - "1238:1238"                     
       - "8888:8888"                  # 映射端口 
     restart: always                    # 容器随 Docker 启动
     command: ["php", "/var/www/GatewayWorker/start.php", "start"]
+    #command: /bin/sh -c "npm run build"  # 启动时构建并运行
     #environment:  # 设置环境变量
     #  - MYSQL_HOST=database  # 可以引用其他服务，这里假设有一个名为 database 的服务
     #  - MYSQL_PORT=3306
 
-    networks:
-      - shared_network
+    #networks:
+    #  - shared_network
 
-networks:
-  shared_network:
-    external: true  # 表示这是一个外部网络
+    db:
+        container_name: mysql
+        image: mysql:5.7
+        volumes:
+        - ./mysql/data:/var/lib/mysql    # MySQL 数据目录
+        - ./mysql/config/my.cnf:/etc/my.cnf # MySQL 配置目录
+        - ./mysql/log:/var/log/mysql   # MySQL 日志目录
+        
+        environment:
+        MYSQL_ROOT_PASSWORD: root        # 设置 MySQL root 密码
+        #MYSQL_DATABASE: test         # 创建数据库
+        ports:
+        - "3306:3306"                    # 映射端口 3307 到 3306
+        restart: always                    # 容器随 Docker 启动
+
+volumes:
+  php-config: 
+  apache-config:
+
+#networks:
+  #shared_network:
+  #  external: true  # 表示这是一个外部网络
+
+  #my_network:
+  #  driver: macvlan
+  #  driver_opts:
+  #    parent: enp2s0  # 替换为你的网络接口名称
+  #  ipam:
+  #    config:
+  #      - subnet: 172.17.16.0/25                # 根据你的网络设置调整
+  #        gateway: 172.17.16.2
 
 
                                                  

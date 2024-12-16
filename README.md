@@ -43,7 +43,7 @@ q: 退出
 ## 介绍
 
 1. 简单交互式操作 
-2. Ubuntu 1804+ (建议)、 Debian 10+ 
+2. Ubuntu 1804+  Debian 10+ 
 3. [查看文档](Documents.md)
 
 ## 功能
