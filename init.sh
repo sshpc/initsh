@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='24.12'
+    selfversion='25.02'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -836,10 +836,14 @@ networktools() {
         esac
     }
     #实时网速
-    vnstatfun() {
-        apt-get install vnstat
-        #获取网卡名称
-        vnstat -l -i $(getnetcard)
+    Realtimenetworkspeedfun() {
+        if _exists 'bmon'; then
+                bmon
+        else
+            echo "bmon 未安装,正在安装..."
+            apt-get install bmon -y
+            bmon
+        fi  
     }
     #外网测速
     publicnettest() {
@@ -1019,7 +1023,7 @@ EOM
 
     menuname='首页/网络'
     echo "networktools" >/etc/s/lastfun
-    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" vnstatfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
+    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" Realtimenetworkspeedfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
 
     menu "${options[@]}"
 }
