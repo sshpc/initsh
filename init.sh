@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='25.02'
+    selfversion='25.03'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -218,7 +218,7 @@ initself() {
         echo
         printf '\033[0;31;36m%b\033[0m' "q: 退出  "
         #if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "b: 返回  0: 首页"; fi
-        printf '\033[0;31;36m%b\033[0m' "b: 返回  0: 首页";
+        printf '\033[0;31;36m%b\033[0m' "b: 返回  0: 首页"
         echo
         echo
         # 获取用户输入
@@ -541,8 +541,8 @@ software() {
     }
 
     dockerinstall() {
-            apt install snap snapd
-            snap install docker
+        apt install snap snapd
+        snap install docker
     }
 
     menuname='首页/软件'
@@ -838,12 +838,12 @@ networktools() {
     #实时网速
     Realtimenetworkspeedfun() {
         if _exists 'bmon'; then
-                bmon
+            bmon
         else
             echo "bmon 未安装,正在安装..."
             apt-get install bmon -y
             bmon
-        fi  
+        fi
     }
     #外网测速
     publicnettest() {
@@ -1439,8 +1439,8 @@ sysset() {
             fi
         }
 
-        FastBenchfun(){
-            wget -N  http://raw.githubusercontent.com/sshpc/FastBench/main/FastBench.sh && chmod +x FastBench.sh && sudo ./FastBench.sh
+        FastBenchfun() {
+            wget -N http://raw.githubusercontent.com/sshpc/FastBench/main/FastBench.sh && chmod +x FastBench.sh && sudo ./FastBench.sh
         }
 
         menuname='首页/系统/性能测试'
@@ -1741,7 +1741,6 @@ sysset() {
 #docker
 dockerfun() {
 
-    
     dockerexec() {
         # 获取所有正在运行的容器
         containers=$(docker ps --format 'table {{.ID}}\t{{.Names}}')
@@ -1778,13 +1777,11 @@ dockerfun() {
         docker images
         nextrun
     }
-    
+
     composestart() {
         docker-compose up -d
 
     }
-
-    
 
     composestart() {
         docker-compose start
@@ -1863,28 +1860,28 @@ dockerfun() {
             docker-compose up -d --build
 
             if [ $? -eq 0 ]; then
-            _blue '创建命名卷软连接 /home/docker/volume'
+                _blue '创建命名卷软连接 /home/docker/volume'
 
-            # 获取目录
-            #current_dir=$(pwd)
-            mkdir -p  /home/docker/volume
-            current_dir=/home/docker/volume
-            # 列出所有卷并遍历
-            for volume in $(docker volume ls -q); do
-                # 获取卷的真实路径
-                mountpoint=$(docker volume inspect "$volume" --format '{{.Mountpoint}}')
+                # 获取目录
+                #current_dir=$(pwd)
+                mkdir -p /home/docker/volume
+                current_dir=/home/docker/volume
+                # 列出所有卷并遍历
+                for volume in $(docker volume ls -q); do
+                    # 获取卷的真实路径
+                    mountpoint=$(docker volume inspect "$volume" --format '{{.Mountpoint}}')
 
-                # 在当前目录创建指向真实路径的符号链接
-                ln -s "$mountpoint" "$current_dir/$volume"
+                    # 在当前目录创建指向真实路径的符号链接
+                    ln -s "$mountpoint" "$current_dir/$volume"
 
-                _green "Created symlink for volume '$volume' at '$current_dir/$volume' -> '$mountpoint'"
-            done
+                    _green "Created symlink for volume '$volume' at '$current_dir/$volume' -> '$mountpoint'"
+                done
             fi
 
         }
 
         composedown() {
-        docker-compose down
+            docker-compose down
         }
 
         dockervolumerm() {
@@ -1899,7 +1896,7 @@ dockerfun() {
             done
         }
 
-        createtemplate(){
+        createtemplate() {
             cat <<EOM >docker-compose.yml
 version: '3.8'
 
@@ -1968,7 +1965,7 @@ volumes:
                                                  
 EOM
 
-cat <<EOM >Dockerfile
+            cat <<EOM >Dockerfile
 # 使用 PHP  和 Apache 的基础镜像
 FROM php:7.4.33-apache
 
@@ -1990,12 +1987,10 @@ WORKDIR /var/www
 
                                                  
 EOM
-echo
-_green '已在当前目录创建 Dockerfile  docker-compose.yml'
-echo
+            echo
+            _green '已在当前目录创建 Dockerfile  docker-compose.yml'
+            echo
         }
-
-        
 
         menuname='首页/docker/维护'
         options=("开启" composestart "终止" composedown "安装-build" composeinstall "创建模板文件" createtemplate "删除所有命名卷" dockervolumerm)
@@ -2004,7 +1999,7 @@ echo
     }
     menuname='首页/docker'
     echo "dockerfun" >/etc/s/lastfun
-    options=("启动" composestart "停止" composestop "查看状态" composeps "进入交互式容器" dockerexec "重启容器" restartcontainer "查看数据卷" catdockervolume "查看compose logs日志" catcomposelogs "安装&维护" maintenancefun "查看镜像" dockerimagesfun )
+    options=("启动" composestart "停止" composestop "查看状态" composeps "进入交互式容器" dockerexec "重启容器" restartcontainer "查看数据卷" catdockervolume "查看compose logs日志" catcomposelogs "安装&维护" maintenancefun "查看镜像" dockerimagesfun)
 
     menu "${options[@]}"
 }
@@ -2115,10 +2110,58 @@ ordertools() {
         wait
 
     }
+    hping3fun() {
+        if ! command -v hping3 &>/dev/null; then
+            _yellow 'hping3 未安装'
+            apt install hping3 -y
+        fi
+        _blue 'UDP ddos'
+        echo 'hping3 -c 10000 -d 120 --udp -w 64 -p 80 --flood --rand-source 127.0.0.1'
+        _blue 'ICMP ddos'
+        echo 'hping3 -c 10000 -d 120 --icmp -w 64 -p 80 --flood --rand-source 127.0.0.1'
+        _blue 'SYN  ddos'
+        echo 'hping3 -c 10000 -d 120 -S -w 64 -p 80 --flood --rand-source 127.0.0.1'
+        _blue 'ACK  ddos'
+        echo 'hping3 -c 10000 -d 120 -A -w 64 -p 80 --flood --rand-source 127.0.0.1'
+        echo
+        echo '-c 100000 =packets 发送的数量.  -S = 只发送SYN packets.'
+        echo '-d 120 = packet的大小  -w 64 = TCP window的大小.'
+        echo '--flood 不显示回应  --rand-source 使用随机的Source IP'
+        exit 0
+
+    }
+
+    Fillupownmemory() {
+        #!/bin/bash
+
+        # 检查系统是否安装了 Python
+        if ! command -v python3 &>/dev/null; then
+            echo "Python 3 未安装，请先安装 Python 3 再运行此脚本。"
+            apt install python3 -y
+        fi
+
+        # 定义 Python 代码块
+        python_code=$(
+            cat <<EOF
+import sys
+
+big_list = []
+while True:
+    big_list.append('a' * 1024 * 1024)
+    print(f"当前列表元素数量: {len(big_list)}, 已使用内存: {sys.getsizeof(big_list)} 字节", end='\r')
+
+EOF
+        )
+
+        # 运行 Python 代码
+        python3 -c "$python_code"
+        trap 'echo "停止填充内存。"; exit' INT
+
+    }
 
     menuname='首页/其他工具'
     echo "ordertools" >/etc/s/lastfun
-    options=("统计根目录占用" statisticsusage "多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways)
+    options=("统计根目录占用" statisticsusage "多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways "hping3-DDOS" hping3fun "打满自身内存" Fillupownmemory)
     menu "${options[@]}"
 }
 #主函数
@@ -2142,9 +2185,9 @@ if [ -e "$(pwd)/init.sh" ]; then
         if [ -z "$(cat /etc/s/lastfun)" ]; then
             main
         else
-            $(cat /etc/s/lastfun) 
+            $(cat /etc/s/lastfun)
         fi
-        
+
     else
         menuname='脚本安装'
         selfinstall
@@ -2153,8 +2196,8 @@ if [ -e "$(pwd)/init.sh" ]; then
 
 else
     if [ -z "$(cat /etc/s/lastfun)" ]; then
-            main
-        else
-            $(cat /etc/s/lastfun) 
-        fi
+        main
+    else
+        $(cat /etc/s/lastfun)
+    fi
 fi
