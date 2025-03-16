@@ -540,14 +540,18 @@ software() {
         menu "${options[@]}"
     }
 
-    dockerinstall() {
+    dockersnapinstall() {
         apt install snap snapd
         snap install docker
     }
 
+    dockerinstall() {
+        bash <(curl -sSL https://gitee.com/SuperManito/LinuxMirrors/raw/main/DockerInstallation.sh)
+    }
+
     menuname='首页/软件'
     echo "software" >/etc/s/lastfun
-    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "换软件源" changemirrors "snap管理" snapfun "软件卸载" removefun "安装常用包" installcomso "安装docker" dockerinstall "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn "安装aapanel" installaapanel "安装RustDesk-Server" installrustdeskserver)
+    options=("aptupdate软件更新" aptupdatefun "修复更新" configureaptfun "换软件源" changemirrors "snap管理" snapfun "软件卸载" removefun "安装常用包" installcomso 安装docker dockerinstall "安装snap版docker" dockersnapinstall "安装btop" installbtop "安装八合一" installbaheyi "安装xui" installxui "安装openvpn" installopenvpn "安装aapanel" installaapanel "安装RustDesk-Server" installrustdeskserver)
     menu "${options[@]}"
 }
 #网络
@@ -1443,8 +1447,12 @@ sysset() {
             wget -N http://raw.githubusercontent.com/sshpc/FastBench/main/FastBench.sh && chmod +x FastBench.sh && sudo ./FastBench.sh
         }
 
+        ecstest() {
+            curl -L https://github.com/spiritLHLS/ecs/raw/main/ecs.sh -o ecs.sh && chmod +x ecs.sh && bash ecs.sh
+        }
+
         menuname='首页/系统/性能测试'
-        options=("sysbench-cpu测试" sysbenchcputest "stress-cpu压测" cputest "磁盘测速" iotestspeed "跑分" FastBenchfun)
+        options=("sysbench-cpu测试" sysbenchcputest "stress-cpu压测" cputest "磁盘测速" iotestspeed "跑分" FastBenchfun "融合怪测试" ecstest)
 
         menu "${options[@]}"
 
@@ -1731,9 +1739,60 @@ sysset() {
 
     }
 
+    swapfun() {
+        if [[ $EUID -ne 0 ]]; then
+            _red "Error:This script must be run as root"
+            exit 1
+        fi
+
+        add_swap() {
+            _green "请输入需要添加的swap,建议为内存的2倍"
+            read -p "请输入swap数值:(纯数字 M)" swapsize
+
+            #检查是否存在swapfile
+            grep -q "swapfile" /etc/fstab
+
+            #如果不存在将为其创建swap
+            if [ $? -ne 0 ]; then
+                fallocate -l ${swapsize}M /swapfile
+                chmod 600 /swapfile
+                mkswap /swapfile
+                swapon /swapfile
+                echo '/swapfile none swap defaults 0 0' >>/etc/fstab
+                _blue "swap创建成功，并查看信息："
+                cat /proc/swaps
+                cat /proc/meminfo | grep Swap
+            else
+                _red "swapfile已存在，swap设置失败，请先运行脚本删除swap后重新设置！"
+            fi
+        }
+
+        del_swap() {
+            #检查是否存在swapfile
+            grep -q "swapfile" /etc/fstab
+
+            #如果存在就将其移除
+            if [ $? -eq 0 ]; then
+                _green "swapfile已发现，正在将其移除..."
+                sed -i '/swapfile/d' /etc/fstab
+                echo "3" >/proc/sys/vm/drop_caches
+                swapoff -a
+                rm -f /swapfile
+                _green "swap已删除！"
+            else
+                _red "swapfile未发现，swap删除失败！"
+            fi
+        }
+
+        menuname='首页/系统/swap管理'
+        options=("添加swap" add_swap "删除swap" del_swap)
+
+        menu "${options[@]}"
+    }
+
     menuname='首页/系统'
     echo "sysset" >/etc/s/lastfun
-    options=("sysinfo系统信息" sysinfo "磁盘详细信息" diskinfo "ps进程搜索" pssearch "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "性能测试" performancetest)
+    options=("sysinfo系统信息" sysinfo "磁盘详细信息" diskinfo "ps进程搜索" pssearch "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "swap管理" swapfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "性能测试" performancetest)
 
     menu "${options[@]}"
 
@@ -2159,9 +2218,24 @@ EOF
 
     }
 
+    IntegratedFunctionScript() {
+        lionfun() {
+            curl -sS -O https://kejilion.pro/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
+        }
+        SKY-BOXfun() {
+            wget -O box.sh https://raw.githubusercontent.com/BlueSkyXN/SKY-BOX/main/box.sh && chmod +x box.sh && clear && ./box.sh
+        }
+
+        menuname='首页/其他工具/综合功能脚本'
+
+        options=("科技lion" lionfun "SKY-BOX" SKY-BOXfun)
+        menu "${options[@]}"
+
+    }
+
     menuname='首页/其他工具'
     echo "ordertools" >/etc/s/lastfun
-    options=("统计根目录占用" statisticsusage "多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways "hping3-DDOS" hping3fun "打满自身内存" Fillupownmemory)
+    options=("统计根目录占用" statisticsusage "多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways "hping3-DDOS" hping3fun "打满自身内存" Fillupownmemory "综合功能脚本" IntegratedFunctionScript)
     menu "${options[@]}"
 }
 #主函数
