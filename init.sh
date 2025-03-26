@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='25.03'
+    selfversion='25.03.25'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -547,6 +547,7 @@ software() {
 
     dockerinstall() {
         bash <(curl -sSL https://gitee.com/SuperManito/LinuxMirrors/raw/main/DockerInstallation.sh)
+        apt  install docker-compose -y
     }
 
     menuname='首页/软件'
@@ -1955,104 +1956,9 @@ dockerfun() {
             done
         }
 
-        createtemplate() {
-            cat <<EOM >docker-compose.yml
-version: '3.8'
-
-services:
-  
-  worker:
-    container_name: worker
-    #image: nginx:latest  # 使用的 Docker 镜像，这里是 Nginx 的最新版本
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - ./www:/var/www           # 网站根目录
-      - apache-config:/etc/apache2  # Apache 配置目录
-      - php-config:/usr/local/etc/php  # PHP 配置目录
-    #volumes:
-    # - ./www:/var/www           # 网站根目录
-    depends_on:
-      - db
-    ports:
-      - "1238:1238"                     
-      - "8888:8888"                  # 映射端口 
-    restart: always                    # 容器随 Docker 启动
-    command: ["php", "/var/www/GatewayWorker/start.php", "start"]
-    #command: /bin/sh -c "npm run build"  # 启动时构建并运行
-    #environment:  # 设置环境变量
-    #  - MYSQL_HOST=database  # 可以引用其他服务，这里假设有一个名为 database 的服务
-    #  - MYSQL_PORT=3306
-
-    #networks:
-    #  - shared_network
-
-    db:
-        container_name: mysql
-        image: mysql:5.7
-        volumes:
-        - ./mysql/data:/var/lib/mysql    # MySQL 数据目录
-        - ./mysql/config/my.cnf:/etc/my.cnf # MySQL 配置目录
-        - ./mysql/log:/var/log/mysql   # MySQL 日志目录
-        
-        environment:
-        MYSQL_ROOT_PASSWORD: root        # 设置 MySQL root 密码
-        #MYSQL_DATABASE: test         # 创建数据库
-        ports:
-        - "3306:3306"                    # 映射端口 3307 到 3306
-        restart: always                    # 容器随 Docker 启动
-
-volumes:
-  php-config: 
-  apache-config:
-
-#networks:
-  #shared_network:
-  #  external: true  # 表示这是一个外部网络
-
-  #my_network:
-  #  driver: macvlan
-  #  driver_opts:
-  #    parent: enp2s0  # 替换为你的网络接口名称
-  #  ipam:
-  #    config:
-  #      - subnet: 172.17.16.0/25                # 根据你的网络设置调整
-  #        gateway: 172.17.16.2
-
-
-                                                 
-EOM
-
-            cat <<EOM >Dockerfile
-# 使用 PHP  和 Apache 的基础镜像
-FROM php:7.4.33-apache
-
-# 安装必要的 PHP 扩展
-RUN docker-php-ext-install pcntl
-RUN apt update && apt install iputils-ping iproute2 -y
-# 安装redis
-#RUN pecl install -y redis
-#RUN docker-php-ext-enable redis
-
-# 启用 Apache 模块
-# RUN a2enmod rewrite
-
-# 设置工作目录
-WORKDIR /var/www
-
-# 复制本地的 PHP 配置文件（如果需要）
-# COPY ./php.ini /usr/local/etc/php/
-
-                                                 
-EOM
-            echo
-            _green '已在当前目录创建 Dockerfile  docker-compose.yml'
-            echo
-        }
 
         menuname='首页/docker/维护'
-        options=("开启" composestart "终止" composedown "安装-build" composeinstall "创建模板文件" createtemplate "删除所有命名卷" dockervolumerm)
+        options=("开启" composestart "终止" composedown "安装-build" composeinstall "删除所有命名卷" dockervolumerm)
 
         menu "${options[@]}"
     }
