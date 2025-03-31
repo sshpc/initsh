@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='25.03.25'
+    selfversion='25.03.31'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -107,8 +107,7 @@ initself() {
 
         jumpfun "welcome" 0.06
         echo
-        _yellow '检查系统环境'
-        echo
+        
         if _exists 's'; then
 
             _red '检测到已存在s程序，位置：/bin/s 请检查!'
@@ -117,9 +116,8 @@ initself() {
 
             menuname='首页'
 
-            jumpfun '开始安装脚本 ' 0.04
+            jumpfun '开始安装 ' 0.04
             echo
-            jumpfun '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' 0.02
 
             cp -f "$(pwd)/init.sh" /bin/init.sh
             ln -s /bin/init.sh /bin/s
@@ -128,18 +126,19 @@ initself() {
 
                 echo "检测到 /etc/s 存在 安装更新..."
                 #写入日志
-                slog set install "$datevar--安装更新--v$selfversion"
+                slog set install "$datevar | 安装更新 | v$selfversion"
             else
                 mkdir /etc/s
                 #写入日志
-                slog set install "$datevar--脚本全新安装--v$selfversion"
+                slog set install "$datevar | 脚本全新安装 | v$selfversion"
             fi
             touch /etc/s/lastfun
+            touch /etc/s/run.log
 
             secho
-            _blue '成功安装 s '
+            _blue '成功安装'
             echo
-            echo '文件释放位置： /bin/init.sh  /bin/s 日志： /etc/s/*'
+            echo '文件释放位置： /bin/init.sh  /bin/s  /etc/s/'
 
             echo
             echo "提示：再次执行任意位置键入 's' "
@@ -154,7 +153,7 @@ initself() {
     #卸载脚本
     removeself() {
         #写入日志
-        slog set install "$datevar--脚本卸载--v$selfversion"
+        slog set install "$datevar  | 脚本卸载 | v$selfversion"
         rm -rf /bin/init.sh
         rm -rf /bin/s
         echo '删除/bin/init.sh  /bin/s'
@@ -217,7 +216,6 @@ initself() {
         done
         echo
         printf '\033[0;31;36m%b\033[0m' "q: 退出  "
-        #if [[ "$number" != "" ]]; then printf '\033[0;31;36m%b\033[0m' "b: 返回  0: 首页"; fi
         printf '\033[0;31;36m%b\033[0m' "b: 返回  0: 首页"
         echo
         echo
@@ -228,8 +226,14 @@ initself() {
             action_index=$((2 * (number - 1) + 1))
             #函数名赋值
             parentfun=${options[action_index]}
+            #如果/etc/s/run.log存在 则记录日志
+            if [ -f /etc/s/run.log ]; then
+                echo "$datevar | $menuname | ${options[action_index]} (${options[action_index-1]})" >>/etc/s/run.log
+            fi
             #函数执行
             ${options[action_index]}
+            
+
             #执行完后自动返回
             waitinput
             ${FUNCNAME[3]}
@@ -1026,9 +1030,62 @@ EOM
         echo 'export http_proxy=http://x.x.x.x:x'
     }
 
+    #系统网络配置优化
+     system_best(){
+	sed -i '/net.ipv4.tcp_retries2/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_slow_start_after_idle/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_fastopen/d' /etc/sysctl.conf
+	sed -i '/fs.file-max/d' /etc/sysctl.conf
+	sed -i '/fs.inotify.max_user_instances/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_syncookies/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_fin_timeout/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_tw_reuse/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_max_syn_backlog/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.ip_local_port_range/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_max_tw_buckets/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.route.gc_timeout/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_synack_retries/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_syn_retries/d' /etc/sysctl.conf
+	sed -i '/net.core.somaxconn/d' /etc/sysctl.conf
+	sed -i '/net.core.netdev_max_backlog/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_timestamps/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.tcp_max_orphans/d' /etc/sysctl.conf
+	sed -i '/net.ipv4.ip_forward/d' /etc/sysctl.conf
+
+echo "net.ipv4.tcp_retries2 = 8
+net.ipv4.tcp_slow_start_after_idle = 0
+fs.file-max = 1000000
+fs.inotify.max_user_instances = 8192
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.ip_local_port_range = 1024 65000
+net.ipv4.tcp_max_syn_backlog = 16384
+net.ipv4.tcp_max_tw_buckets = 6000
+net.ipv4.route.gc_timeout = 100
+net.ipv4.tcp_syn_retries = 1
+net.ipv4.tcp_synack_retries = 1
+net.core.somaxconn = 32768
+net.core.netdev_max_backlog = 32768
+net.ipv4.tcp_timestamps = 0
+net.ipv4.tcp_max_orphans = 32768
+# forward ipv4
+#net.ipv4.ip_forward = 1">>/etc/sysctl.conf
+sysctl -p
+	echo "*               soft    nofile           1000000
+*               hard    nofile          1000000">/etc/security/limits.conf
+	echo "ulimit -SHn 1000000">>/etc/profile
+	read -p "需要重启VPS后，才能生效系统优化配置，是否现在重启 ? [Y/n] :" yn
+	[ -z "${yn}" ] && yn="y"
+	if [[ $yn == [Yy] ]]; then
+		echo -e "${Info} VPS 重启中..."
+		reboot
+	fi
+}
+
     menuname='首页/网络'
     echo "networktools" >/etc/s/lastfun
-    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" Realtimenetworkspeedfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun)
+    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" Realtimenetworkspeedfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun "系统网络配置优化" system_best)
 
     menu "${options[@]}"
 }
@@ -1562,7 +1619,7 @@ sysset() {
                 echo
                 _blue "操作完成,写入日志"
                 #写入日志
-                slog set service "add-service--$servicename--$datevar"
+                slog set service "add-service | $servicename | $datevar"
                 _blue "开启服务"
                 service $servicename start
                 service $servicename status
@@ -1598,7 +1655,7 @@ sysset() {
                 #重新加载 systemd 配置
                 systemctl daemon-reload
                 #写入日志
-                slog set service "del-service--$servicename--$datevar"
+                slog set service "del-service | $servicename | $datevar"
                 _blue "操作完成"
                 echo
 
@@ -1669,7 +1726,7 @@ sysset() {
                 echo
                 _blue "操作完成,写入日志"
                 #写入日志
-                slog set systemctl "add-systemctl--$systemdname--$datevar"
+                slog set systemctl "add-systemctl | $systemdname | $datevar"
                 _blue "开启服务"
                 systemctl start $systemdname
                 systemctl status $systemdname
@@ -1708,7 +1765,7 @@ sysset() {
                 #重新加载 systemd 配置
                 systemctl daemon-reload
                 #写入日志
-                slog set systemctl "del-systemctl--$systemdname--$datevar"
+                slog set systemctl "del-systemctl | $systemdname | $datevar"
                 _blue "操作完成"
                 echo
 
@@ -2144,12 +2201,20 @@ EOF
     options=("统计根目录占用" statisticsusage "多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways "hping3-DDOS" hping3fun "打满自身内存" Fillupownmemory "综合功能脚本" IntegratedFunctionScript)
     menu "${options[@]}"
 }
+
+catselfrunlog() {
+    #查看脚本执行日志
+    tail -20 /etc/s/run.log
+    nextrun
+}
+
+
 #主函数
 main() {
 
     menuname='首页'
     echo "main" >/etc/s/lastfun
-    options=("soft软件管理" software "network网络管理" networktools "system系统管理" sysset "docker" dockerfun "其他工具" ordertools "升级脚本" updateself "卸载脚本" removeself)
+    options=("soft软件管理" software "network网络管理" networktools "system系统管理" sysset "docker" dockerfun "其他工具" ordertools "查看脚本执行日志" catselfrunlog "升级脚本" updateself "卸载脚本" removeself)
     menu "${options[@]}"
 }
 

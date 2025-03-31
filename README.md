@@ -31,9 +31,9 @@ bash <(curl -sSL http://raw.githubusercontent.com/sshpc/initsh/main/init.sh)
 
 3: system系统管理    4: docker
 
-5: 其他工具          6: 升级脚本
+5: 其他工具          6: 查看脚本执行日志
 
-7: 卸载脚本
+7: 升级脚本           8: 卸载脚本
 
 q: 退出  
 
@@ -66,6 +66,7 @@ q: 退出
 * 多线程下载
 * 临时http代理
 * d-dos
+* 执行日志
 * 持续更新...
 
 
