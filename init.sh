@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='25.03.31'
+    selfversion='25.4.2'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -2133,23 +2133,7 @@ ordertools() {
 
     }
     hping3fun() {
-        if ! command -v hping3 &>/dev/null; then
-            _yellow 'hping3 未安装'
-            apt install hping3 -y
-        fi
-        _blue 'UDP ddos'
-        echo 'hping3 -c 10000 -d 120 --udp -w 64 -p 80 --flood --rand-source 127.0.0.1'
-        _blue 'ICMP ddos'
-        echo 'hping3 -c 10000 -d 120 --icmp -w 64 -p 80 --flood --rand-source 127.0.0.1'
-        _blue 'SYN  ddos'
-        echo 'hping3 -c 10000 -d 120 -S -w 64 -p 80 --flood --rand-source 127.0.0.1'
-        _blue 'ACK  ddos'
-        echo 'hping3 -c 10000 -d 120 -A -w 64 -p 80 --flood --rand-source 127.0.0.1'
-        echo
-        echo '-c 100000 =packets 发送的数量.  -S = 只发送SYN packets.'
-        echo '-d 120 = packet的大小  -w 64 = TCP window的大小.'
-        echo '--flood 不显示回应  --rand-source 使用随机的Source IP'
-        exit 0
+        wget -N  http://raw.githubusercontent.com/sshpc/trident/main/run.sh && chmod +x run.sh && sudo ./run.sh
 
     }
 
