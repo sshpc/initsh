@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='25.4.2'
+    selfversion='25.4.9'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -2014,14 +2014,20 @@ dockerfun() {
         }
 
 
+
         menuname='首页/docker/维护'
         options=("开启" composestart "终止" composedown "安装-build" composeinstall "删除所有命名卷" dockervolumerm)
 
         menu "${options[@]}"
     }
+
+    sshpcdockerapp(){
+        git clone https://github.com/sshpc/docker.git
+    }
+
     menuname='首页/docker'
     echo "dockerfun" >/etc/s/lastfun
-    options=("启动" composestart "停止" composestop "查看状态" composeps "进入交互式容器" dockerexec "重启容器" restartcontainer "查看数据卷" catdockervolume "查看compose logs日志" catcomposelogs "安装&维护" maintenancefun "查看镜像" dockerimagesfun)
+    options=("启动" composestart "停止" composestop "查看状态" composeps "进入交互式容器" dockerexec "重启容器" restartcontainer "查看数据卷" catdockervolume "查看compose logs日志" catcomposelogs "安装&维护" maintenancefun "查看镜像" dockerimagesfun "下载sshpcdockerapp仓库" sshpcdockerapp)
 
     menu "${options[@]}"
 }
