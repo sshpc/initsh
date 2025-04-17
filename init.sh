@@ -107,7 +107,7 @@ initself() {
 
         jumpfun "welcome" 0.06
         echo
-        
+
         if _exists 's'; then
 
             _red '检测到已存在s程序，位置：/bin/s 请检查!'
@@ -228,11 +228,10 @@ initself() {
             parentfun=${options[action_index]}
             #如果/etc/s/run.log存在 则记录日志
             if [ -f /etc/s/run.log ]; then
-                echo "$datevar | $menuname | ${options[action_index]} (${options[action_index-1]})" >>/etc/s/run.log
+                echo "$datevar | $menuname | ${options[action_index]} (${options[action_index - 1]})" >>/etc/s/run.log
             fi
             #函数执行
             ${options[action_index]}
-            
 
             #执行完后自动返回
             waitinput
@@ -551,7 +550,7 @@ software() {
 
     dockerinstall() {
         bash <(curl -sSL https://gitee.com/SuperManito/LinuxMirrors/raw/main/DockerInstallation.sh)
-        apt  install docker-compose -y
+        apt install docker-compose -y
     }
 
     menuname='首页/软件'
@@ -1031,28 +1030,28 @@ EOM
     }
 
     #系统网络配置优化
-     system_best(){
-	sed -i '/net.ipv4.tcp_retries2/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_slow_start_after_idle/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_fastopen/d' /etc/sysctl.conf
-	sed -i '/fs.file-max/d' /etc/sysctl.conf
-	sed -i '/fs.inotify.max_user_instances/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_syncookies/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_fin_timeout/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_tw_reuse/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_max_syn_backlog/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.ip_local_port_range/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_max_tw_buckets/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.route.gc_timeout/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_synack_retries/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_syn_retries/d' /etc/sysctl.conf
-	sed -i '/net.core.somaxconn/d' /etc/sysctl.conf
-	sed -i '/net.core.netdev_max_backlog/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_timestamps/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.tcp_max_orphans/d' /etc/sysctl.conf
-	sed -i '/net.ipv4.ip_forward/d' /etc/sysctl.conf
+    system_best() {
+        sed -i '/net.ipv4.tcp_retries2/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_slow_start_after_idle/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_fastopen/d' /etc/sysctl.conf
+        sed -i '/fs.file-max/d' /etc/sysctl.conf
+        sed -i '/fs.inotify.max_user_instances/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_syncookies/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_fin_timeout/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_tw_reuse/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_max_syn_backlog/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.ip_local_port_range/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_max_tw_buckets/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.route.gc_timeout/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_synack_retries/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_syn_retries/d' /etc/sysctl.conf
+        sed -i '/net.core.somaxconn/d' /etc/sysctl.conf
+        sed -i '/net.core.netdev_max_backlog/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_timestamps/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.tcp_max_orphans/d' /etc/sysctl.conf
+        sed -i '/net.ipv4.ip_forward/d' /etc/sysctl.conf
 
-echo "net.ipv4.tcp_retries2 = 8
+        echo "net.ipv4.tcp_retries2 = 8
 net.ipv4.tcp_slow_start_after_idle = 0
 fs.file-max = 1000000
 fs.inotify.max_user_instances = 8192
@@ -1070,22 +1069,127 @@ net.core.netdev_max_backlog = 32768
 net.ipv4.tcp_timestamps = 0
 net.ipv4.tcp_max_orphans = 32768
 # forward ipv4
-#net.ipv4.ip_forward = 1">>/etc/sysctl.conf
-sysctl -p
-	echo "*               soft    nofile           1000000
-*               hard    nofile          1000000">/etc/security/limits.conf
-	echo "ulimit -SHn 1000000">>/etc/profile
-	read -p "需要重启VPS后，才能生效系统优化配置，是否现在重启 ? [Y/n] :" yn
-	[ -z "${yn}" ] && yn="y"
-	if [[ $yn == [Yy] ]]; then
-		echo -e "${Info} VPS 重启中..."
-		reboot
-	fi
-}
+#net.ipv4.ip_forward = 1" >>/etc/sysctl.conf
+        sysctl -p
+        echo "*               soft    nofile           1000000
+*               hard    nofile          1000000" >/etc/security/limits.conf
+        echo "ulimit -SHn 1000000" >>/etc/profile
+        read -p "需要重启VPS后，才能生效系统优化配置，是否现在重启 ? [Y/n] :" yn
+        [ -z "${yn}" ] && yn="y"
+        if [[ $yn == [Yy] ]]; then
+            echo -e "${Info} VPS 重启中..."
+            reboot
+        fi
+    }
+
+    portforward() {
+        # 检查是否安装了 socat
+        if ! command -v socat &>/dev/null; then
+            _yellow "socat 未安装，正在安装..."
+            apt-get update
+            apt-get install socat -y
+        fi
+        # 定义函数：启动端口转发
+        start_port_forward() {
+
+            # 获取监听端口和目标地址
+            read -p "请输入监听端口: " listen_port
+            read -p "请输入目标 IP:  " target_addr
+            read -p "请输入目标端口: " target_port
+
+            # 服务名称
+            service_name="port-forwarding-$listen_port"
+
+            # 创建 systemd 服务文件
+            service_file="/etc/systemd/system/$service_name.service"
+            cat <<EOF >$service_file
+[Unit]
+Description=lookname
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/socat TCP-LISTEN:$listen_port,fork,reuseaddr TCP:$target_addr:$target_port
+Restart=always
+RestartSec=5
+StandardOutput=file:$HOME/$service_name.log
+StandardError=file:$HOME/$service_name.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+            # 重载 systemd 管理器配置
+            systemctl daemon-reload
+
+            # 启动服务
+            systemctl start $service_name
+            _blue "服务 $service_name 已启动。"
+
+            # 启用服务，使其开机自启
+            systemctl enable $service_name
+            _green "服务 $service_name 已设置为开机自启。"
+
+        }
+        # 定义函数：停止端口转发
+        stop_port_forward() {
+            # 获取所有以 port-forwarding 开头的服务
+            services=($(systemctl list-units --full -all | grep 'port-forwarding' | awk '{print $1}'))
+            if [ ${#services[@]} -eq 0 ]; then
+                _red "未找到任何 port-forwarding 相关的服务。"
+                return
+            fi
+
+            echo "以下是所有 port-forwarding 相关的服务："
+            for i in "${!services[@]}"; do
+                status=$(systemctl is-active "${services[$i]}")
+                echo "$((i + 1)). ${services[$i]} - $status"
+            done
+
+            read -p "请输入要删除的服务编号（输入 0 退出）: " choice
+            if [ "$choice" -eq 0 ]; then
+                return
+            fi
+
+            index=$((choice - 1))
+            if [ $index -ge 0 ] && [ $index -lt ${#services[@]} ]; then
+                service_to_delete="${services[$index]}"
+                systemctl stop $service_to_delete
+                systemctl disable $service_to_delete
+                rm -f "/etc/systemd/system/$service_to_delete"
+                systemctl daemon-reload
+                _blue "服务 $service_to_delete 已停止并删除"
+            else
+                _red "输入的编号无效，请重新运行该函数。"
+            fi
+        }
+        # 定义函数：检查端口转发状态
+        list_port_forward() {
+            _blue "列出所有端口转发："
+            pgrep -f "socat TCP-LISTEN:" | xargs -I {} ps -p {} -o pid,cmd
+
+            # 获取所有以 port-forwarding 开头的服务
+            services=($(systemctl list-units --full -all | grep 'port-forwarding' | awk '{print $1}'))
+            if [ ${#services[@]} -eq 0 ]; then
+                _red "未找到任何 port-forwarding 相关的服务。"
+                return
+            fi
+
+            echo "以下是所有 port-forwarding 相关的服务："
+            for i in "${!services[@]}"; do
+                status=$(systemctl is-active "${services[$i]}")
+                echo "$((i + 1)). ${services[$i]} - $status"
+            done
+        }
+        # 定义函数：主菜单
+        menuname='首页/网络/端口转发服务'
+        options=("开启转发" start_port_forward "终止转发" stop_port_forward "列出所有转发" list_port_forward)
+
+        menu "${options[@]}"
+    }
 
     menuname='首页/网络'
     echo "networktools" >/etc/s/lastfun
-    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" Realtimenetworkspeedfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun "系统网络配置优化" system_best)
+    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" Realtimenetworkspeedfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun "系统网络配置优化" system_best "端口转发服务" portforward)
 
     menu "${options[@]}"
 }
@@ -2013,15 +2117,13 @@ dockerfun() {
             done
         }
 
-
-
         menuname='首页/docker/维护'
         options=("开启" composestart "终止" composedown "安装-build" composeinstall "删除所有命名卷" dockervolumerm)
 
         menu "${options[@]}"
     }
 
-    sshpcdockerapp(){
+    sshpcdockerapp() {
         git clone https://github.com/sshpc/docker.git
     }
 
@@ -2106,7 +2208,7 @@ ordertools() {
 
     }
     hping3fun() {
-        wget -N  http://raw.githubusercontent.com/sshpc/trident/main/run.sh && chmod +x run.sh && sudo ./run.sh
+        wget -N http://raw.githubusercontent.com/sshpc/trident/main/run.sh && chmod +x run.sh && sudo ./run.sh
 
     }
 
@@ -2158,7 +2260,7 @@ EOF
 
         #仅杀掉占用最大的进程
         killtopvscode() {
-        ps -uxa | grep '\.vscode-server' | sort -k3 -nr | head -n 1 | awk '{print $2}' | xargs kill -9
+            ps -uxa | grep '\.vscode-server' | sort -k3 -nr | head -n 1 | awk '{print $2}' | xargs kill -9
         }
 
         #杀死所有vscode进程
@@ -2166,6 +2268,7 @@ EOF
             ps uxa | grep .vscode-server | awk '{print $2}' | xargs kill -9
         }
         menuname='首页/其他工具/杀死vscode进程'
+        echo "killvscode" >/etc/s/lastfun
         options=("仅杀掉占用最大的进程" killtopvscode "杀死所有vscode进程" killallvscode)
         menu "${options[@]}"
     }
@@ -2181,7 +2284,6 @@ catselfrunlog() {
     tail -20 /etc/s/run.log
     nextrun
 }
-
 
 #主函数
 main() {

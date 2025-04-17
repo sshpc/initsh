@@ -72,6 +72,9 @@ curl -fsSL git.io/speedtest-cli.sh | sudo bash
 ### 配置临时代理
 窗口http代理  export http_proxy=http://x.x.x.x:x
 
+### 端口转发
+根据提示执行即可
+
 ## 系统
 
 ### 同步时间
