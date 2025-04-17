@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='25.4.9'
+    selfversion='25.4.17'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -2105,39 +2105,6 @@ ordertools() {
         siege -c $erupt -t $time $url
 
     }
-    pingalways() {
-        read -rp "目标主机:" -e target_host
-        echo '默认 -s 65500 -i 0.1 '
-        read -rp "ping请求的参数默认: " -e -i '-s 65500 -i 0.1' ping_options
-        read -rp "并发数: " -e -i 10 concurrency
-
-        # 数组用于存储ping进程的进程ID
-        pids=()
-
-        # 定义终止信号的处理函数
-        function cleanup() {
-            echo "Terminating ping processes..."
-            for pid in "${pids[@]}"; do
-                kill $pid
-            done
-            exit
-        }
-
-        # 注册终止信号的处理函数
-        trap cleanup SIGINT SIGTERM
-
-        # 并发执行ping请求
-        for ((i = 1; i <= concurrency; i++)); do
-            ping $ping_options $target_host >/dev/null &
-            pids+=($!)
-        done
-
-        echo "Ping requests have been sent."
-
-        # 等待所有ping进程完成
-        wait
-
-    }
     hping3fun() {
         wget -N  http://raw.githubusercontent.com/sshpc/trident/main/run.sh && chmod +x run.sh && sudo ./run.sh
 
@@ -2186,9 +2153,26 @@ EOF
 
     }
 
+    #杀死vscode进程
+    killvscode() {
+
+        #仅杀掉占用最大的进程
+        killtopvscode() {
+        ps -uxa | grep '\.vscode-server' | sort -k3 -nr | head -n 1 | awk '{print $2}' | xargs kill -9
+        }
+
+        #杀死所有vscode进程
+        killallvscode() {
+            ps uxa | grep .vscode-server | awk '{print $2}' | xargs kill -9
+        }
+        menuname='首页/其他工具/杀死vscode进程'
+        options=("仅杀掉占用最大的进程" killtopvscode "杀死所有vscode进程" killallvscode)
+        menu "${options[@]}"
+    }
+
     menuname='首页/其他工具'
     echo "ordertools" >/etc/s/lastfun
-    options=("统计根目录占用" statisticsusage "多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "Siege-web压力测试" siegetest "死亡之ping" pingalways "hping3-DDOS" hping3fun "打满自身内存" Fillupownmemory "综合功能脚本" IntegratedFunctionScript)
+    options=("统计根目录占用" statisticsusage "多线程下载" aria2fun "统计目录文件行数" countfileslines "安装git便捷提交" igitcommiteasy "杀死vscode进程" killvscode "Siege-web压力测试" siegetest "hping3-DDOS" hping3fun "打满自身内存" Fillupownmemory "综合功能脚本" IntegratedFunctionScript)
     menu "${options[@]}"
 }
 
