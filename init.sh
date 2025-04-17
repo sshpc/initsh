@@ -49,7 +49,12 @@ initself() {
     nextrun() {
         waitinput
         #环境变量调用上一次的次菜单
-        ${FUNCNAME[3]}
+        if [[ -n "${FUNCNAME[3]}" ]]; then
+            ${FUNCNAME[3]}
+        else
+            main
+        fi
+        
     }
 
     #字符跳动 (参数：字符串 间隔时间s，默认为0.1秒)
@@ -234,12 +239,15 @@ initself() {
             ${options[action_index]}
 
             #执行完后自动返回
-            waitinput
-            ${FUNCNAME[3]}
+            nextrun
         elif [[ $number == 0 ]]; then
             main
         elif [[ $number == 'b' ]]; then
+            if [[ -n "${FUNCNAME[3]}" ]]; then
             ${FUNCNAME[3]}
+            else
+                main
+            fi
         elif [[ $number == 'q' ]]; then
             echo
             exit
@@ -1187,9 +1195,36 @@ EOF
         menu "${options[@]}"
     }
 
+    #测试端口延迟
+    testport(){
+        # 提示用户输入 IP 地址和端口号
+        read -p "请输入目标 IP 地址: " ip
+        read -p "请输入目标端口号: " port
+
+        # 记录开始时间
+        start_time=$(date +%s%N)
+
+        # 尝试连接到指定的 IP 和端口
+        nc -z -w 2 $ip $port
+        result=$?
+
+        # 记录结束时间
+        end_time=$(date +%s%N)
+
+        # 计算延迟（毫秒）
+        latency=$(( (end_time - start_time) / 1000000 ))
+
+        if [ $result -eq 0 ]; then
+            echo "端口 $port 在 $ip 上开放，延迟约为 $latency 毫秒。"
+        else
+            echo "端口 $port 在 $ip 上未开放或连接超时，延迟计算失败。"
+        fi
+
+    }
+
     menuname='首页/网络'
     echo "networktools" >/etc/s/lastfun
-    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" Realtimenetworkspeedfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun "系统网络配置优化" system_best "端口转发服务" portforward)
+    options=("网络信息" netinfo "外网测速" publicnettest "iperf3打流" iperftest "临时http代理" http_proxy "实时网速" Realtimenetworkspeedfun "配置局域网ip" lanfun "nmap扫描" nmapfun "ufw" ufwfun "fail2ban" fail2banfun "系统网络配置优化" system_best "端口转发服务" portforward "测试端口延迟" testport)
 
     menu "${options[@]}"
 }
