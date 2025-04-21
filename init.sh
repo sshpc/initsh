@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='25.4.17'
+    selfversion='25.4.21'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -2303,7 +2303,7 @@ EOF
             ps uxa | grep .vscode-server | awk '{print $2}' | xargs kill -9
         }
         menuname='首页/其他工具/杀死vscode进程'
-        echo "killvscode" >/etc/s/lastfun
+        echo "ordertools" >/etc/s/lastfun
         options=("仅杀掉占用最大的进程" killtopvscode "杀死所有vscode进程" killallvscode)
         menu "${options[@]}"
     }
