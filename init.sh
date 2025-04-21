@@ -121,7 +121,7 @@ initself() {
 
             menuname='首页'
 
-            jumpfun '开始安装 ' 0.04
+            _blue '开始安装 ' 
             echo
 
             cp -f "$(pwd)/init.sh" /bin/init.sh
@@ -350,13 +350,13 @@ software() {
 
     #更新所有已安装的软件包
     aptupdatefun() {
-        jumpfun "更新所有软件包" 0.02
+        _blue "更新所有软件包" 
         dpkg --configure -a
         if [[ -n $(pgrep -f "apt") ]]; then
             pgrep -f apt | xargs kill -9
         fi
         apt-get update -y && apt-get install curl -y
-        jumpfun "更新完成" 0.02
+        _blue "更新完成" 
     }
     #修复更新
     configureaptfun() {
@@ -722,14 +722,14 @@ networktools() {
     #网络信息
     netinfo() {
         echo
-        jumpfun "--本机IP--" 0.04
+        _blue "--本机IP--" 
         ifconfig -a | grep "inet "
 
-        jumpfun "--路由表--" 0.04
+        _blue "--路由表--" 
         route -n
-        jumpfun "--监听端口--" 0.04
+        _blue "--监听端口--" 
         netstat -tunlp
-        jumpfun "--test IPv4/IPv6..." 0.01
+        _blue "--test IPv4/IPv6..." 
         [[ -n ${local_curl} ]] && ip_check_cmd="curl -s -m 4" || ip_check_cmd="wget -qO- -T 4"
         ipv4_check=$( (ping -4 -c 1 -W 4 ipv4.google.com >/dev/null 2>&1 && echo true) || ${ip_check_cmd} -4 icanhazip.com 2>/dev/null)
         ipv6_check=$( (ping -6 -c 1 -W 4 ipv6.google.com >/dev/null 2>&1 && echo true) || ${ip_check_cmd} -6 icanhazip.com 2>/dev/null)
@@ -740,10 +740,10 @@ networktools() {
         [[ -z "$ipv6_check" ]] && online+=" / $(_red "Offline")" || online+=" / $(_green "Online")"
 
         echo "IPv4/IPv6          : $online"
-        jumpfun "--公网IP--" 0.04
+        _blue "--公网IP--" 
         curl cip.cc
         echo
-        jumpfun "--ip地区--" 0.04
+        _blue "--ip地区--" 
         local org city country region
         org="$(wget -q -T10 -O- ipinfo.io/org)"
         city="$(wget -q -T10 -O- ipinfo.io/city)"
@@ -761,12 +761,12 @@ networktools() {
         if [[ -z "${org}" ]]; then
             echo "Region             : $(_red "No ISP detected")"
         fi
-        jumpfun "--IP连接数--" 0.04
+        _blue "--IP连接数--" 
         waitinput
         echo '   数量 ip'
         netstat -na | grep ESTABLISHED | awk '{print$5}' | awk -F : '{print$1}' | sort | uniq -c | sort -r
         echo
-        jumpfun "--ssh失败记录--" 0.04
+        _blue "--ssh失败记录--" 
         waitinput
         lastb | grep root | awk '{print $3}' | sort | uniq
         echo
@@ -1254,7 +1254,7 @@ sysset() {
         echo "PasswordAuthentication no" >>/etc/ssh/sshd_config
         _blue "重启服务Restart service"
         service sshd restart
-        jumpfun "ok"
+        _blue "ok"
     }
     #生成ssh密钥对
     sshgetpub() {
@@ -1410,11 +1410,11 @@ sysset() {
     }
     #磁盘详细信息
     diskinfo() {
-        jumpfun "--fdisk信息--" 0.04
+        _blue "--fdisk信息--" 
         fdisk -l
-        jumpfun "--lsblk块设备信息--" 0.04
+        _blue "--lsblk块设备信息--" 
         lsblk
-        jumpfun "--分区信息--" 0.04
+        _blue "--分区信息--" 
         df -Th
         echo
         nextrun
@@ -1717,7 +1717,7 @@ sysset() {
                 next
                 echo
                 waitinput
-                jumpfun '开始配置' 0.1
+                _blue '开始配置' 
                 echo
 
                 touch /etc/init.d/$servicename
@@ -1844,7 +1844,7 @@ sysset() {
                 next
                 echo
                 waitinput
-                jumpfun '开始配置' 0.1
+                _blue '开始配置' 
                 echo
 
                 touch /usr/lib/systemd/system/$systemdname.service
@@ -1987,9 +1987,47 @@ sysset() {
         menu "${options[@]}"
     }
 
+    performancemonitoringfun() {
+    cat <<EOM > /root/monitor.sh
+#!/usr/bin/env bash
+
+# 获取 CPU 核心数
+cpu_count=\$(nproc)
+# 设置阈值：核心数 × 5
+threshold=\$(( cpu_count * 5 ))
+
+echo "监控启动：CPU 核心数=\$cpu_count，负载阈值=\$threshold"
+echo "每 60 秒检查一次 5 分钟平均负载，大于阈值时 kill -9 占用最高的进程"
+
+while true; do
+  # 从 /proc/loadavg 读取 5 分钟平均负载（第 2 个字段）
+  load=\$(awk '{print \$2}' /proc/loadavg)
+
+  # 使用 bc 进行浮点数比较
+  if (( \$(echo "\$load > \$threshold" | bc -l) )); then
+    # 找到当前 CPU 占用率最高的进程 PID
+    pid=\$(ps -eo pid,pcpu --no-headers --sort=-pcpu | head -n1 | awk '{print \$1}')
+    # 获取该进程名称（可选，用于日志）
+    pname=\$(ps -p "\$pid" -o comm=)
+
+    echo "\$(date '+%F %T') 负载 \$load 超过阈值 \$threshold，正在终止 PID=\$pid (\$pname)" >> /root/monitor_load.log
+    kill -9 "\$pid"
+  fi
+
+  # 等待一段时间后继续检测
+  sleep 20
+done
+EOM
+
+chmod +x /root/monitor.sh
+
+_blue 'ok /root/monitor.sh'
+exit
+}    
+
     menuname='首页/系统'
     echo "sysset" >/etc/s/lastfun
-    options=("sysinfo系统信息" sysinfo "磁盘详细信息" diskinfo "ps进程搜索" pssearch "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "swap管理" swapfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "性能测试" performancetest)
+    options=("sysinfo系统信息" sysinfo "磁盘详细信息" diskinfo "ps进程搜索" pssearch "sshpubset写入ssh公钥" sshsetpub "rootsshpubkeyonly仅密钥root" sshpubonly "同步时间" synchronization_time "生成密钥对" sshgetpub "catkeys查看已存在ssh公钥" catkeys "计划任务" crontabfun "swap管理" swapfun "配置rc.local" rclocalfun "配置自定义服务" customservicefun "系统检查" systemcheck "性能测试" performancetest "获取性能监控脚本" performancemonitoringfun)
 
     menu "${options[@]}"
 
@@ -2238,7 +2276,7 @@ ordertools() {
         echo
         waitinput
 
-        jumpfun '开始测试...' 0.06
+        _blue '开始测试...' 
         siege -c $erupt -t $time $url
 
     }
