@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='25.4.21'
+    selfversion='25.4.23'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -50,7 +50,8 @@ initself() {
         waitinput
         #环境变量调用上一次的次菜单
         if [[ -n "${FUNCNAME[3]}" ]]; then
-            ${FUNCNAME[3]}
+            #${FUNCNAME[3]}
+            $(cat /etc/s/lastfun)
         else
             main
         fi
@@ -67,6 +68,31 @@ initself() {
             sleep "$delay"
         done
         echo
+    }
+
+    # 加载动画 loading $! wait # 等待所有子进程完成
+    loading() {
+        local pids=("$@")
+        local delay=0.1
+        local spinstr='|/-\'
+        tput civis # 隐藏光标
+
+        while :; do
+            local all_done=true
+            for pid in "${pids[@]}"; do
+                if kill -0 "$pid" 2>/dev/null; then
+                    all_done=false
+                    local temp=${spinstr#?}
+                    printf "\r\033[0;31;36m[ %c ] 正在执行 ...\033[0m" "$spinstr"
+                    local spinstr=$temp${spinstr%"$temp"}
+                    sleep $delay
+                fi
+            done
+            [[ $all_done == true ]] && break
+        done
+
+        tput cnorm        # 恢复光标
+        printf "\r\033[K" # 清除行
     }
     #logo
     secho() {
@@ -2098,6 +2124,7 @@ dockerfun() {
         docker ps
         _blue 'all'
         docker ps -a
+        nextrun
     }
 
     catdockervolume() {
