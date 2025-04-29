@@ -5,7 +5,7 @@ export LANG=en_US.UTF-8
 trap _exit INT QUIT TERM
 #初始化函数
 initself() {
-    selfversion='25.4.23'
+    selfversion='25.4.29'
     datevar=$(date +%Y-%m-%d_%H:%M:%S)
     #菜单名称(默认首页)
     menuname='首页'
@@ -209,7 +209,7 @@ initself() {
     #菜单头部
     menutop() {
         clear
-        _green '# Ubuntu初始化&工具脚本'
+        _yellow '本仓库已不再维护 !!! 请再次升级 !!!'
         _green '# Author:SSHPC <https://github.com/sshpc>'
         echo
         _blue ">~~~~~~~~~~~~~~ Ubuntu tools 脚本工具 ~~~~~~~~~~~~<  v: $selfversion"
