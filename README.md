@@ -1,5 +1,9 @@
 # Ubuntu 初始化&工具脚本
 
+## 本仓库已不再维护 ！！！
+
+转至新版 [https://github.com/sshpc/s](https://github.com/sshpc/s)
+
 ## 安装
 
 ### 一键安装(推荐)

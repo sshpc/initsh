@@ -187,24 +187,19 @@ initself() {
         slog set install "$datevar  | 脚本卸载 | v$selfversion"
         rm -rf /bin/init.sh
         rm -rf /bin/s
-        echo '删除/bin/init.sh  /bin/s'
-        read -ep "是否删除日志目录/etc/s (默认n): " yorn
-        if [[ "$yorn" = "y" ]]; then
-            rm -rf /etc/s
-        fi
-        echo
-        _blue '卸载完成'
+        rm -rf /etc/s
+        rm -rf init.sh
     }
     #脚本升级
     updateself() {
 
         _blue '下载github最新版'
-        wget -N http://raw.githubusercontent.com/sshpc/initsh/main/init.sh
+        wget -N  http://raw.githubusercontent.com/sshpc/s/main/s.sh 
         # 检查上一条命令的退出状态码
         if [ $? -eq 0 ]; then
             _blue '卸载旧版...'
             removeself
-            chmod +x ./init.sh && ./init.sh
+            chmod +x s.sh && sudo ./s.sh
 
         else
             _red "下载失败,请重试"
